@@ -1,0 +1,14 @@
+{
+  "domain_to_idx": {
+    "leaf": 0,
+    "fruit": 1
+  },
+  "idx_to_domain": {
+    "0": "leaf",
+    "1": "fruit"
+  },
+  "class_names": [
+    "leaf",
+    "fruit"
+  ]
+}

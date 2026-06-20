@@ -1,0 +1,117 @@
+{
+  "totals": {
+    "groups": 549,
+    "images": 1319
+  },
+  "group_size_histogram": {
+    "1": 164,
+    "3": 385
+  },
+  "groups_by_primary_class": {
+    "Healthy_Tomato": 102,
+    "Mold": 95,
+    "Anthracnose": 83,
+    "Fruit_Cracking": 82,
+    "Blossom_End_Rot": 66,
+    "Late_Blight": 64,
+    "Catfaced": 35,
+    "Spotted_Wilt_Virus": 22
+  },
+  "splits": {
+    "train": {
+      "groups": 382,
+      "images": 910,
+      "group_fraction": 0.6958,
+      "image_fraction": 0.6899,
+      "groups_by_primary_class": {
+        "Healthy_Tomato": 71,
+        "Mold": 66,
+        "Anthracnose": 58,
+        "Fruit_Cracking": 57,
+        "Blossom_End_Rot": 46,
+        "Late_Blight": 45,
+        "Catfaced": 24,
+        "Spotted_Wilt_Virus": 15
+      },
+      "images_by_primary_class": {
+        "Healthy_Tomato": 175,
+        "Mold": 158,
+        "Anthracnose": 142,
+        "Fruit_Cracking": 139,
+        "Late_Blight": 111,
+        "Blossom_End_Rot": 94,
+        "Catfaced": 56,
+        "Spotted_Wilt_Virus": 35
+      }
+    },
+    "val": {
+      "groups": 81,
+      "images": 199,
+      "group_fraction": 0.1475,
+      "image_fraction": 0.1509,
+      "groups_by_primary_class": {
+        "Healthy_Tomato": 15,
+        "Mold": 14,
+        "Anthracnose": 12,
+        "Fruit_Cracking": 12,
+        "Blossom_End_Rot": 10,
+        "Late_Blight": 10,
+        "Catfaced": 5,
+        "Spotted_Wilt_Virus": 3
+      },
+      "images_by_primary_class": {
+        "Healthy_Tomato": 39,
+        "Mold": 34,
+        "Fruit_Cracking": 32,
+        "Late_Blight": 28,
+        "Anthracnose": 24,
+        "Blossom_End_Rot": 22,
+        "Catfaced": 13,
+        "Spotted_Wilt_Virus": 7
+      }
+    },
+    "test": {
+      "groups": 86,
+      "images": 210,
+      "group_fraction": 0.1566,
+      "image_fraction": 0.1592,
+      "groups_by_primary_class": {
+        "Healthy_Tomato": 16,
+        "Mold": 15,
+        "Anthracnose": 13,
+        "Fruit_Cracking": 13,
+        "Blossom_End_Rot": 10,
+        "Late_Blight": 9,
+        "Catfaced": 6,
+        "Spotted_Wilt_Virus": 4
+      },
+      "images_by_primary_class": {
+        "Healthy_Tomato": 40,
+        "Mold": 39,
+        "Anthracnose": 33,
+        "Fruit_Cracking": 29,
+        "Blossom_End_Rot": 22,
+        "Late_Blight": 21,
+        "Catfaced": 14,
+        "Spotted_Wilt_Virus": 12
+      }
+    }
+  },
+  "class_names": [
+    "Anthracnose",
+    "Blossom_End_Rot",
+    "Catfaced",
+    "Fruit_Cracking",
+    "Healthy_Tomato",
+    "Late_Blight",
+    "Mold",
+    "Spotted_Wilt_Virus"
+  ],
+  "seed": 42,
+  "ratios": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "grouping_key": "filename stem before .rf."
+}

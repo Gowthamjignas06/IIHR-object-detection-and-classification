@@ -1,0 +1,11 @@
+# Core ML stack (tested on Python 3.10+, Windows, RTX 3050 Ti)
+# Install PyTorch with CUDA from https://pytorch.org if you have an NVIDIA GPU.
+# Example (CUDA 12.6):
+#   pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu126
+torch>=2.6.0
+torchvision>=0.21.0
+ultralytics>=8.3.107
+numpy>=2.1.1,<2.2
+opencv-python>=4.11.0
+Pillow>=10.0.0
+PyYAML>=6.0

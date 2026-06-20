@@ -1,0 +1,22 @@
+{
+  "splits": {
+    "train": {
+      "images": 12118,
+      "leaf": 11208,
+      "fruit": 910
+    },
+    "val": {
+      "images": 2601,
+      "leaf": 2402,
+      "fruit": 199
+    },
+    "test": {
+      "images": 2611,
+      "leaf": 2401,
+      "fruit": 210
+    }
+  },
+  "totals": {
+    "images": 17330
+  }
+}

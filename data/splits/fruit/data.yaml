@@ -1,0 +1,7 @@
+path: .
+train: images/train
+val: images/val
+test: images/test
+
+nc: 8
+names: ['Anthracnose', 'Blossom_End_Rot', 'Catfaced', 'Fruit_Cracking', 'Healthy_Tomato', 'Late_Blight', 'Mold', 'Spotted_Wilt_Virus']

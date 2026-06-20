@@ -1,0 +1,26 @@
+{
+  "class_names": [
+    "Bacterial spot",
+    "Early blight",
+    "Healthy",
+    "Late blight",
+    "Leaf Mold",
+    "Septoria leaf spot",
+    "Spider mites (Two-spotted)",
+    "Target Spot",
+    "Tomato Yellow Leaf Curl Virus",
+    "Tomato mosaic virus"
+  ],
+  "class_to_idx": {
+    "Bacterial spot": 0,
+    "Early blight": 1,
+    "Healthy": 2,
+    "Late blight": 3,
+    "Leaf Mold": 4,
+    "Septoria leaf spot": 5,
+    "Spider mites (Two-spotted)": 6,
+    "Target Spot": 7,
+    "Tomato Yellow Leaf Curl Virus": 8,
+    "Tomato mosaic virus": 9
+  }
+}

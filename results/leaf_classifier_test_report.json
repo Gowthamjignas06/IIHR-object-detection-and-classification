@@ -1,0 +1,114 @@
+{
+  "report_version": "1.0",
+  "generated_at": "2026-06-20",
+  "step": 5,
+  "status": "approved_complete",
+  "checkpoint": {
+    "path": "checkpoints/leaf_v1_efficientnet_b0.pt",
+    "canonical": true,
+    "further_leaf_training_planned": false,
+    "best_phase": 2,
+    "best_epoch": 12,
+    "best_macro_f1_val": 0.992957,
+    "best_macro_f1_val_rounded": 0.9930,
+    "early_blight_precision_val": 0.9804,
+    "late_blight_fp_to_early_blight_val": 1,
+    "completed_phases": [1, 2],
+    "integrity_verified": true,
+    "integrity_live_val_macro_f1": 0.992957,
+    "integrity_delta": 0.0
+  },
+  "baselines": {
+    "phase1_epoch8_clean_checkpoint": {
+      "early_blight_precision_val": 0.7444,
+      "late_blight_fp_to_early_blight_val": 19,
+      "val_macro_f1": 0.9019
+    }
+  },
+  "test_overall": {
+    "split": "test",
+    "n_images": 2401,
+    "accuracy": 0.9942,
+    "macro_f1": 0.9942,
+    "weighted_f1": 0.9942,
+    "held_out": true,
+    "used_for_training_decisions": false
+  },
+  "test_per_class": [
+    {"class": "Bacterial spot", "precision": 0.9969, "recall": 0.9969, "f1": 0.9969, "support": 319},
+    {"class": "Early blight", "precision": 1.0, "recall": 0.98, "f1": 0.9899, "support": 150},
+    {"class": "Healthy", "precision": 1.0, "recall": 1.0, "f1": 1.0, "support": 238},
+    {"class": "Late blight", "precision": 0.993, "recall": 0.993, "f1": 0.993, "support": 287},
+    {"class": "Leaf Mold", "precision": 0.993, "recall": 0.993, "f1": 0.993, "support": 143},
+    {"class": "Septoria leaf spot", "precision": 0.9925, "recall": 1.0, "f1": 0.9962, "support": 265},
+    {"class": "Spider mites (Two-spotted)", "precision": 0.9804, "recall": 0.9921, "f1": 0.9862, "support": 252},
+    {"class": "Target Spot", "precision": 0.9905, "recall": 0.9905, "f1": 0.9905, "support": 210},
+    {"class": "Tomato Yellow Leaf Curl Virus", "precision": 0.9979, "recall": 0.9938, "f1": 0.9958, "support": 481},
+    {"class": "Tomato mosaic virus", "precision": 1.0, "recall": 1.0, "f1": 1.0, "support": 56}
+  ],
+  "test_confusion_matrix": {
+    "class_order": [
+      "Bacterial spot",
+      "Early blight",
+      "Healthy",
+      "Late blight",
+      "Leaf Mold",
+      "Septoria leaf spot",
+      "Spider mites (Two-spotted)",
+      "Target Spot",
+      "Tomato Yellow Leaf Curl Virus",
+      "Tomato mosaic virus"
+    ],
+    "rows_true_cols_pred": [
+      [318, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+      [0, 147, 0, 2, 0, 1, 0, 0, 0, 0],
+      [0, 0, 238, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 285, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 142, 0, 1, 0, 0, 0],
+      [0, 0, 0, 0, 0, 265, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 250, 2, 0, 0],
+      [0, 0, 0, 0, 0, 0, 2, 208, 0, 0],
+      [1, 0, 0, 0, 0, 0, 2, 0, 478, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 56]
+    ]
+  },
+  "early_blight_and_late_to_early_fp": {
+    "metric": [
+      {"name": "early_blight_precision", "baseline": 0.7444, "val_best": 0.9804, "test": 1.0},
+      {"name": "late_blight_fp_to_early_blight", "baseline": 19, "val_best": 1, "test": 0}
+    ]
+  },
+  "val_vs_test_per_class": [
+    {"class": "Bacterial spot", "val_f1": 0.9969, "test_f1": 0.9969, "delta_f1": 0.0, "flagged": false},
+    {"class": "Early blight", "val_f1": 0.9901, "test_f1": 0.9899, "delta_f1": -0.0002, "flagged": false},
+    {"class": "Healthy", "val_f1": 0.9979, "test_f1": 1.0, "delta_f1": 0.0021, "flagged": false},
+    {"class": "Late blight", "val_f1": 0.993, "test_f1": 0.993, "delta_f1": 0.0, "flagged": false},
+    {"class": "Leaf Mold", "val_f1": 0.9965, "test_f1": 0.993, "delta_f1": -0.0035, "flagged": false},
+    {"class": "Septoria leaf spot", "val_f1": 0.9962, "test_f1": 0.9962, "delta_f1": 0.0, "flagged": false},
+    {"class": "Spider mites (Two-spotted)", "val_f1": 0.9901, "test_f1": 0.9862, "delta_f1": -0.0039, "flagged": false},
+    {"class": "Target Spot", "val_f1": 0.9809, "test_f1": 0.9905, "delta_f1": 0.0096, "flagged": false},
+    {"class": "Tomato Yellow Leaf Curl Virus", "val_f1": 0.9969, "test_f1": 0.9958, "delta_f1": -0.001, "flagged": false},
+    {"class": "Tomato mosaic virus", "val_f1": 0.9912, "test_f1": 1.0, "delta_f1": 0.0088, "flagged": false}
+  ],
+  "val_overfit_assessment": {
+    "test_macro_f1": 0.9942,
+    "val_macro_f1_best": 0.993,
+    "test_above_val": true,
+    "any_class_drop_gt_0_03": false,
+    "largest_f1_drops": [
+      {"class": "Spider mites (Two-spotted)", "delta_f1": -0.0039},
+      {"class": "Leaf Mold", "delta_f1": -0.0035}
+    ]
+  },
+  "phase2_training_summary": {
+    "epochs_run": 12,
+    "epochs_cap": 15,
+    "stop_reason": "early_stopping",
+    "premature_early_stop_flag": false
+  },
+  "artifacts": {
+    "training_log": "logs/leaf_train_phase2.log",
+    "eval_log": "logs/leaf_eval_test.log",
+    "eval_script": "scripts/eval_leaf_test_report.py"
+  }
+}

@@ -1,0 +1,28 @@
+model: fruit_yolo
+experiment_name: fruit_v1_yolov8n
+
+data:
+  yaml: data/splits/fruit/data.yaml
+
+training:
+  seed: 42
+  device: auto
+  imgsz: 640
+  batch: 8
+  batch_fallback: 4
+  epochs: 100
+  patience: 20
+  pretrained_weights: yolov8n.pt
+  workers: 0
+  amp: true
+
+output:
+  project: runs/fruit
+  run_name: train
+
+checkpoint:
+  filename: fruit_v1_yolov8n.pt
+
+monitor_classes:
+  - Catfaced
+  - Spotted_Wilt_Virus

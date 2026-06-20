@@ -1,0 +1,15 @@
+{
+  "project": "Tomato Disease Diagnosis System",
+  "phase": "1+2 software-only (phase 3 hardware deferred)",
+  "generated_at": "2026-06-20",
+  "artifacts": {
+    "router": "checkpoints/router_v1_mobilenet_v3_small.pt",
+    "leaf_classifier": "checkpoints/leaf_v1_efficientnet_b0.pt",
+    "fruit_detector": "checkpoints/fruit_v1_yolov8n.pt"
+  },
+  "reports": {
+    "leaf_test": "results/leaf_classifier_test_report.json",
+    "fruit_test": "results/fruit_detector_test_report.json"
+  },
+  "pipeline": "src/infer_pipeline.py"
+}

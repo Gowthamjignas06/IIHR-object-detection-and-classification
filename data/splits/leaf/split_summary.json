@@ -1,0 +1,75 @@
+{
+  "totals": {
+    "classes": 10,
+    "images": 16011
+  },
+  "images_by_class_all": {
+    "Bacterial spot": 2127,
+    "Early blight": 1000,
+    "Healthy": 1591,
+    "Late blight": 1909,
+    "Leaf Mold": 952,
+    "Septoria leaf spot": 1771,
+    "Spider mites (Two-spotted)": 1676,
+    "Target Spot": 1404,
+    "Tomato Yellow Leaf Curl Virus": 3208,
+    "Tomato mosaic virus": 373
+  },
+  "splits": {
+    "train": {
+      "images": 11208,
+      "image_fraction": 0.7,
+      "images_by_class": {
+        "Tomato Yellow Leaf Curl Virus": 2246,
+        "Bacterial spot": 1489,
+        "Late blight": 1336,
+        "Septoria leaf spot": 1240,
+        "Spider mites (Two-spotted)": 1173,
+        "Healthy": 1114,
+        "Target Spot": 983,
+        "Early blight": 700,
+        "Leaf Mold": 666,
+        "Tomato mosaic virus": 261
+      }
+    },
+    "val": {
+      "images": 2402,
+      "image_fraction": 0.15,
+      "images_by_class": {
+        "Tomato Yellow Leaf Curl Virus": 481,
+        "Bacterial spot": 319,
+        "Late blight": 286,
+        "Septoria leaf spot": 266,
+        "Spider mites (Two-spotted)": 251,
+        "Healthy": 239,
+        "Target Spot": 211,
+        "Early blight": 150,
+        "Leaf Mold": 143,
+        "Tomato mosaic virus": 56
+      }
+    },
+    "test": {
+      "images": 2401,
+      "image_fraction": 0.15,
+      "images_by_class": {
+        "Tomato Yellow Leaf Curl Virus": 481,
+        "Bacterial spot": 319,
+        "Late blight": 287,
+        "Septoria leaf spot": 265,
+        "Spider mites (Two-spotted)": 252,
+        "Healthy": 238,
+        "Target Spot": 210,
+        "Early blight": 150,
+        "Leaf Mold": 143,
+        "Tomato mosaic virus": 56
+      }
+    }
+  },
+  "seed": 42,
+  "ratios": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "leaf_data_root": "data/leaf_raw/PlantVillage"
+}

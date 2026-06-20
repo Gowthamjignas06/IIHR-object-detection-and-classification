@@ -1,0 +1,30 @@
+model: leaf
+experiment_name: leaf_v1_efficientnet_b0
+
+data:
+  image_size: 224
+  batch_size: 16
+  num_workers: 0
+
+training:
+  seed: 42
+  device: auto
+  amp: true
+  phase1_epochs: 10
+  phase2_epochs: 15
+  phase1_lr: 0.001
+  phase2_lr: 0.00005
+  unfreeze_blocks: 3
+  weight_decay: 0.0001
+  early_stopping:
+    enabled: true
+    metric: macro_f1
+    patience: 4
+    min_delta: 0.003
+
+checkpoint:
+  filename: leaf_v1_efficientnet_b0.pt
+
+phase1_gate:
+  weak_recall_margin: 0.10
+  min_absolute_recall: 0.70

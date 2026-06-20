@@ -1,0 +1,193 @@
+{
+  "report_version": "1.0",
+  "generated_at": "2026-06-20",
+  "step": 6,
+  "status": "approved_complete",
+  "checkpoint": {
+    "path": "checkpoints/fruit_v1_yolov8n.pt",
+    "canonical": true,
+    "best_epoch": 44,
+    "stop_epoch": 64,
+    "stop_reason": "early_stopping_patience_20"
+  },
+  "known_limitations": {
+    "Catfaced": {
+      "issue": "Recall-perfect but precision-poor (over-detection)",
+      "val_precision": 0.568,
+      "val_recall": 1.0,
+      "dominant_fp_source": "Fruit_Cracking -> pred Catfaced (40% of FP)",
+      "other_fp_sources": [
+        "background spurious boxes (33.3% of FP)",
+        "Blossom_End_Rot -> pred Catfaced (26.7% of FP)"
+      ]
+    },
+    "Spotted_Wilt_Virus": {
+      "issue": "Low recall; class confusion with Late_Blight at high IoU",
+      "val_recall": 0.368,
+      "val_precision": 0.886,
+      "missed_as_background_pct_of_gt": 31.6,
+      "absorbed_as_late_blight_pct_of_gt": 26.3,
+      "conclusion": "More labeled data needed, not more training epochs on this split."
+    }
+  },
+  "severity_methodology_note": "Fruit severity_pct is a v1 box-geometry heuristic (see src/severity.py); full-image-area fallback when only one disease box is detected is an approximation sensitive to photo cropping, not a calibrated fruit-surface measurement.",
+  "val": {
+    "split": "val",
+    "n_images": 199,
+    "map50": 0.7611,
+    "map50_95": 0.4455,
+    "precision_mean": 0.8256,
+    "recall_mean": 0.641,
+    "per_class": [
+      {
+        "class": "Anthracnose",
+        "precision": 0.8443,
+        "recall": 0.7568,
+        "map50": 0.818,
+        "map50_95": 0.4026
+      },
+      {
+        "class": "Blossom_End_Rot",
+        "precision": 0.8251,
+        "recall": 0.8298,
+        "map50": 0.883,
+        "map50_95": 0.4994
+      },
+      {
+        "class": "Catfaced",
+        "precision": 0.5893,
+        "recall": 1.0,
+        "map50": 0.8913,
+        "map50_95": 0.6423
+      },
+      {
+        "class": "Fruit_Cracking",
+        "precision": 0.9812,
+        "recall": 0.5106,
+        "map50": 0.7496,
+        "map50_95": 0.4233
+      },
+      {
+        "class": "Healthy_Tomato",
+        "precision": 0.8355,
+        "recall": 0.4286,
+        "map50": 0.6551,
+        "map50_95": 0.3586
+      },
+      {
+        "class": "Late_Blight",
+        "precision": 0.8273,
+        "recall": 0.6251,
+        "map50": 0.7474,
+        "map50_95": 0.4302
+      },
+      {
+        "class": "Mold",
+        "precision": 0.7912,
+        "recall": 0.6089,
+        "map50": 0.6634,
+        "map50_95": 0.3613
+      },
+      {
+        "class": "Spotted_Wilt_Virus",
+        "precision": 0.9113,
+        "recall": 0.3684,
+        "map50": 0.6809,
+        "map50_95": 0.4462
+      }
+    ]
+  },
+  "test": {
+    "split": "test",
+    "n_images": 210,
+    "map50": 0.8067,
+    "map50_95": 0.4714,
+    "precision_mean": 0.8105,
+    "recall_mean": 0.7402,
+    "per_class": [
+      {
+        "class": "Anthracnose",
+        "precision": 0.779,
+        "recall": 0.9234,
+        "map50": 0.8507,
+        "map50_95": 0.4752
+      },
+      {
+        "class": "Blossom_End_Rot",
+        "precision": 0.8621,
+        "recall": 0.9231,
+        "map50": 0.9181,
+        "map50_95": 0.5656
+      },
+      {
+        "class": "Catfaced",
+        "precision": 0.7849,
+        "recall": 0.85,
+        "map50": 0.83,
+        "map50_95": 0.3938
+      },
+      {
+        "class": "Fruit_Cracking",
+        "precision": 0.6984,
+        "recall": 0.5758,
+        "map50": 0.6888,
+        "map50_95": 0.4502
+      },
+      {
+        "class": "Healthy_Tomato",
+        "precision": 0.824,
+        "recall": 0.6176,
+        "map50": 0.7596,
+        "map50_95": 0.5016
+      },
+      {
+        "class": "Late_Blight",
+        "precision": 0.8754,
+        "recall": 0.7619,
+        "map50": 0.8646,
+        "map50_95": 0.5379
+      },
+      {
+        "class": "Mold",
+        "precision": 0.7777,
+        "recall": 0.5614,
+        "map50": 0.6884,
+        "map50_95": 0.3333
+      },
+      {
+        "class": "Spotted_Wilt_Virus",
+        "precision": 0.8821,
+        "recall": 0.7083,
+        "map50": 0.8533,
+        "map50_95": 0.514
+      }
+    ]
+  },
+  "val_vs_test_map_flags": [
+    {
+      "class": "Catfaced",
+      "val_map50": 0.8913,
+      "test_map50": 0.83,
+      "delta_map50": -0.0613,
+      "val_map50_95": 0.6423,
+      "test_map50_95": 0.3938,
+      "delta_map50_95": -0.2485
+    },
+    {
+      "class": "Fruit_Cracking",
+      "val_map50": 0.7496,
+      "test_map50": 0.6888,
+      "delta_map50": -0.0608,
+      "val_map50_95": 0.4233,
+      "test_map50_95": 0.4502,
+      "delta_map50_95": 0.0269
+    }
+  ],
+  "val_overfit_assessment": {
+    "test_map50": 0.8067,
+    "val_map50": 0.7611,
+    "test_map50_95": 0.4714,
+    "val_map50_95": 0.4455,
+    "any_class_map50_drop_gt_0_05": true
+  }
+}
