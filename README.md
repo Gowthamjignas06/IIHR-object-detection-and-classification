@@ -45,20 +45,105 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 ### 2. Model weights
 
-Weights are not in git (~43 MB). Either:
+The three trained checkpoints are **included in this repo** under [`checkpoints/`](checkpoints/):
 
-- **Train** (see [Training](#training)), or  
-- **Download** the three `.pt` files from a GitHub Release into [`checkpoints/`](checkpoints/)
+| File | Model |
+|---|---|
+| `router_v1_mobilenet_v3_small.pt` | Leaf vs fruit router |
+| `leaf_v1_efficientnet_b0.pt` | 10-class leaf classifier |
+| `fruit_v1_yolov8n.pt` | 8-class fruit detector |
 
-Required files: `router_v1_mobilenet_v3_small.pt`, `leaf_v1_efficientnet_b0.pt`, `fruit_v1_yolov8n.pt`
+No download step is required for inference after cloning.
 
 ### 3. Leaf training data (optional for inference only)
 
-Inference works on any photo if checkpoints are present. **Training the leaf branch** requires PlantVillage tomato images — see [`data/README.md`](data/README.md).
+Inference works on any photo with the included checkpoints. **Retraining the leaf branch** requires PlantVillage tomato images — see [`data/README.md`](data/README.md).
 
 Fruit split images and labels are included under `data/splits/fruit/`.
 
-### 4. Run inference
+### 4. Example: run on held-out test images
+
+These are real images from the **held-out test splits** (not used during training). Ground-truth labels are shown for comparison.
+
+#### Fruit test image (in repo — runs immediately after clone)
+
+**Image:** `data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg`  
+**Ground truth:** `Catfaced` (fruit test split)
+
+```powershell
+python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg"
+```
+
+**Output:**
+
+```json
+{
+  "domain": "fruit",
+  "class": "Catfaced",
+  "confidence": 0.7705,
+  "severity_pct": 56.41,
+  "gradcam_overlay": null,
+  "detections": [
+    {
+      "class": "Catfaced",
+      "confidence": 0.7705,
+      "bbox": [79.6, 152.5, 553.6, 640.0]
+    }
+  ],
+  "model_version": "fruit_v1_yolov8n"
+}
+```
+
+| Field | Value | Notes |
+|---|---|---|
+| `class` | Catfaced | Matches ground truth |
+| `confidence` | 0.7705 | Highest-confidence detection |
+| `severity_pct` | 56.41 | Disease box area ÷ estimated fruit area (v1 heuristic) |
+| `detections[0].bbox` | `[x1, y1, x2, y2]` | Pixel coords in original 640×640 image |
+
+#### Leaf test image (PlantVillage — link `data/leaf_raw/` first)
+
+Leaf test images are **not** shipped in this repo (16k images). After linking PlantVillage under `data/leaf_raw/PlantVillage/` (see [`data/README.md`](data/README.md)), run:
+
+**Image:** `data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG`  
+**Ground truth:** `Early blight` (leaf test CSV, row 321)
+
+```powershell
+python -u src/infer_pipeline.py --json "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG"
+```
+
+**Output:**
+
+```json
+{
+  "domain": "leaf",
+  "class": "Early blight",
+  "confidence": 0.9446,
+  "severity_pct": 4.42,
+  "gradcam_overlay": "results/gradcam_overlays/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455_gradcam.jpg",
+  "detections": null,
+  "model_version": "leaf_v1_efficientnet_b0"
+}
+```
+
+| Field | Value | Notes |
+|---|---|---|
+| `class` | Early blight | Matches ground truth |
+| `confidence` | 0.9446 | Softmax probability of predicted class |
+| `severity_pct` | 4.42 | HSV/Lab lesion fraction on green canopy |
+| `gradcam_overlay` | `.jpg` in `results/gradcam_overlays/` | Written automatically; highlights regions influencing the prediction |
+
+#### Both branches in one command
+
+```powershell
+python -u src/infer_pipeline.py --json `
+  "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG" `
+  "data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg"
+```
+
+The router sends each image to the correct branch automatically (leaf → classifier + Grad-CAM; fruit → YOLO boxes).
+
+### 5. Run inference on your own photo
 
 From the repo root:
 
@@ -81,20 +166,6 @@ python -u src/infer_pipeline.py --json photo1.jpg photo2.jpg
 | `--device` | `auto` (default), `cuda`, or `cpu` |
 
 Leaf runs save a Grad-CAM overlay to `results/gradcam_overlays/<stem>_gradcam.jpg`.
-
-**Example output**
-
-```json
-{
-  "domain": "leaf",
-  "class": "Early blight",
-  "confidence": 0.9446,
-  "severity_pct": 4.42,
-  "gradcam_overlay": ".../results/gradcam_overlays/..._gradcam.jpg",
-  "detections": null,
-  "model_version": "leaf_v1_efficientnet_b0"
-}
-```
 
 ### Phone photos — practical notes
 
@@ -126,7 +197,7 @@ Evaluation scripts: `scripts/eval_leaf_test_report.py`, `scripts/eval_fruit_test
 ```
 ├── configs/          # YAML training configs
 ├── data/             # Splits, audit, data setup docs
-├── checkpoints/      # Model weights (.pt, gitignored)
+├── checkpoints/      # Trained model weights (.pt)
 ├── results/          # Test reports + Grad-CAM outputs
 ├── scripts/          # Evaluation and analysis utilities
 └── src/              # Training, inference, severity, Grad-CAM
