@@ -67,11 +67,11 @@ These are real images from the **held-out test splits** (not used during trainin
 
 #### Fruit test image (in repo — runs immediately after clone)
 
-**Image:** `data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg`  
-**Ground truth:** `Catfaced` (fruit test split)
+**Image:** `data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg`  
+**Ground truth:** `Blossom_End_Rot` (fruit test split)
 
 ```powershell
-python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg"
+python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg"
 ```
 
 **Output:**
@@ -79,15 +79,20 @@ python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/catfaced_1
 ```json
 {
   "domain": "fruit",
-  "class": "Catfaced",
-  "confidence": 0.7705,
-  "severity_pct": 56.41,
+  "class": "Blossom_End_Rot",
+  "confidence": 0.693,
+  "severity_pct": 49.32,
   "gradcam_overlay": null,
   "detections": [
     {
+      "class": "Blossom_End_Rot",
+      "confidence": 0.693,
+      "bbox": [369.0, 94.5, 525.3, 307.2]
+    },
+    {
       "class": "Catfaced",
-      "confidence": 0.7705,
-      "bbox": [79.6, 152.5, 553.6, 640.0]
+      "confidence": 0.2552,
+      "bbox": [0.1, 0.0, 160.1, 289.7]
     }
   ],
   "model_version": "fruit_v1_yolov8n"
@@ -96,10 +101,10 @@ python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/catfaced_1
 
 | Field | Value | Notes |
 |---|---|---|
-| `class` | Catfaced | Matches ground truth |
-| `confidence` | 0.7705 | Highest-confidence detection |
-| `severity_pct` | 56.41 | Disease box area ÷ estimated fruit area (v1 heuristic) |
-| `detections[0].bbox` | `[x1, y1, x2, y2]` | Pixel coords in original 640×640 image |
+| `class` | Blossom_End_Rot | Matches ground truth (highest-confidence box) |
+| `confidence` | 0.693 | Primary detection score |
+| `severity_pct` | 49.32 | Sum of disease box areas ÷ estimated fruit area |
+| `detections` | 2 boxes | YOLO can return multiple defects per image; primary class = top confidence |
 
 #### Leaf test image (PlantVillage — link `data/leaf_raw/` first)
 
@@ -138,7 +143,7 @@ python -u src/infer_pipeline.py --json "data/leaf_raw/PlantVillage/Tomato_Early_
 ```powershell
 python -u src/infer_pipeline.py --json `
   "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG" `
-  "data/splits/fruit/images/test/catfaced_10-Copy_png.rf.e94d467c282e2a4f0191d1393d3d594e.jpg"
+  "data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg"
 ```
 
 The router sends each image to the correct branch automatically (leaf → classifier + Grad-CAM; fruit → YOLO boxes).
