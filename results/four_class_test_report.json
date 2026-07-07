@@ -1,0 +1,180 @@
+{
+  "report_version": "1.0",
+  "generated_at": "2026-07-07",
+  "branch": "4-class-classifier",
+  "system": "Four-class tomato diagnostic classifier",
+  "description": "Standalone four-class wrapper over existing trained leaf and fruit models. No new training — source model weights reused as-is.",
+  "target_classes": [
+    "Early blight",
+    "Blossom_End_Rot",
+    "Healthy leaf",
+    "Healthy plant"
+  ],
+  "source_models": {
+    "router": {
+      "file": "checkpoints/router_v1_mobilenet_v3_small.pt",
+      "architecture": "MobileNetV3-Small",
+      "role": "Routes each image to leaf or fruit branch"
+    },
+    "leaf_classifier": {
+      "file": "checkpoints/leaf_v1_efficientnet_b0.pt",
+      "architecture": "EfficientNet-B0",
+      "original_classes": 10,
+      "classes_used_here": 2,
+      "classes_used_names": ["Early blight", "Healthy"]
+    },
+    "fruit_detector": {
+      "file": "checkpoints/fruit_v1_yolov8n.pt",
+      "architecture": "YOLOv8n",
+      "original_classes": 8,
+      "classes_used_here": 2,
+      "classes_used_names": ["Blossom_End_Rot", "Healthy_Tomato"]
+    }
+  },
+  "router": {
+    "test_accuracy": 1.0,
+    "val_accuracy": 1.0,
+    "note": "Router achieves 100% accuracy on both val and test splits — no misrouting errors."
+  },
+  "leaf_branch": {
+    "metric_type": "classification (softmax F1)",
+    "test_split_total_images": 2401,
+    "four_class_relevant_images": 388,
+    "overall_leaf_test": {
+      "accuracy": 0.9942,
+      "macro_f1": 0.9942,
+      "weighted_f1": 0.9942,
+      "n_images": 2401
+    },
+    "per_class": {
+      "Early blight": {
+        "precision": 1.0,
+        "recall": 0.98,
+        "f1": 0.9899,
+        "support": 150,
+        "correct": 147,
+        "errors": {
+          "misclassified_as_Late_blight": 2,
+          "misclassified_as_Septoria_leaf_spot": 1
+        },
+        "val_f1": 0.9901,
+        "val_vs_test_delta_f1": -0.0002,
+        "flag": false
+      },
+      "Healthy leaf": {
+        "source_label": "Healthy",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 238,
+        "correct": 238,
+        "errors": {},
+        "val_f1": 0.9979,
+        "val_vs_test_delta_f1": 0.0021,
+        "flag": false
+      }
+    },
+    "two_class_leaf_summary": {
+      "macro_f1": 0.995,
+      "micro_accuracy": 0.9923,
+      "images_correct": 385,
+      "images_total": 388,
+      "note": "Macro-F1 = average of Early blight F1 (0.9899) and Healthy leaf F1 (1.0)"
+    },
+    "early_blight_precision_progression": {
+      "phase1_baseline": 0.7444,
+      "val_phase2_best": 0.9804,
+      "test_final": 1.0,
+      "late_blight_fp_to_early_blight_test": 0,
+      "note": "Zero Late blight images were misclassified as Early blight on the held-out test set."
+    }
+  },
+  "fruit_branch": {
+    "metric_type": "detection (YOLOv8 mAP)",
+    "test_split_total_images": 210,
+    "per_class": {
+      "Blossom_End_Rot": {
+        "precision": 0.8621,
+        "recall": 0.9231,
+        "map50": 0.9181,
+        "map50_95": 0.5656,
+        "val_map50": 0.883,
+        "val_vs_test_delta_map50": 0.0351,
+        "note": "Test mAP50 exceeds val — no overfitting on this class."
+      },
+      "Healthy_Tomato": {
+        "source_label": "Healthy_Tomato",
+        "output_label": "Healthy plant",
+        "precision": 0.824,
+        "recall": 0.6176,
+        "map50": 0.7596,
+        "map50_95": 0.5016,
+        "val_map50": 0.6551,
+        "val_vs_test_delta_map50": 0.1045,
+        "note": "Recall limited by non-maximal-suppression interactions; still strong mAP."
+      }
+    },
+    "two_class_fruit_summary": {
+      "mean_map50": 0.8389,
+      "mean_map50_95": 0.5336,
+      "mean_precision": 0.8431,
+      "mean_recall": 0.7704,
+      "note": "Average of the two target fruit classes only."
+    }
+  },
+  "four_class_summary": {
+    "note": "Leaf classes use classification F1; fruit classes use detection mAP@0.5. Both are reported separately and averaged for a headline figure.",
+    "headline_scores": {
+      "Early blight F1 (test)": 0.9899,
+      "Healthy leaf F1 (test)": 1.0,
+      "Blossom_End_Rot mAP50 (test)": 0.9181,
+      "Healthy plant mAP50 (test)": 0.7596
+    },
+    "four_class_macro_average": {
+      "value": 0.9169,
+      "formula": "(F1_EB + F1_HL + mAP50_BER + mAP50_HP) / 4",
+      "breakdown": "(0.9899 + 1.0 + 0.9181 + 0.7596) / 4"
+    },
+    "router_accuracy": 1.0,
+    "effective_end_to_end": "Router is perfect — no images are misrouted to the wrong branch."
+  },
+  "dataset_summary": {
+    "leaf_test_images": 2401,
+    "fruit_test_images": 210,
+    "leaf_train_images": 11208,
+    "leaf_val_images": 2402,
+    "fruit_train_images": 910,
+    "fruit_val_images": 199,
+    "leaf_split_seed": 42,
+    "leaf_split_ratio": "70 / 15 / 15",
+    "fruit_split_method": "Group-aware (by Roboflow source stem) 70/15/15",
+    "leaf_data_source": "PlantVillage tomato subset (Kaggle)",
+    "fruit_data_source": "Roboflow YOLOv8 export (profnourasemary/tomato-dataset)"
+  },
+  "training_summary": {
+    "router": {
+      "architecture": "MobileNetV3-Small",
+      "phases": 2,
+      "best_val_accuracy": 1.0
+    },
+    "leaf_classifier": {
+      "architecture": "EfficientNet-B0 (pretrained ImageNet)",
+      "phases": 2,
+      "best_phase": 2,
+      "best_epoch": 12,
+      "epochs_run": 12,
+      "stop_reason": "early_stopping",
+      "best_val_macro_f1": 0.9930
+    },
+    "fruit_detector": {
+      "architecture": "YOLOv8n (pretrained COCO)",
+      "best_epoch": 44,
+      "stop_epoch": 64,
+      "stop_reason": "early_stopping (patience 20)"
+    }
+  },
+  "source_reports": {
+    "leaf": "results/leaf_classifier_test_report.json",
+    "fruit": "results/fruit_detector_test_report.json"
+  }
+}

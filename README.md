@@ -1,36 +1,66 @@
-# Tomato Disease Diagnosis
+# Four-Class Tomato Diagnostic Classifier
 
-Dual-branch machine learning pipeline for **tomato leaf disease classification** and **fruit defect detection**, with automatic routing, explainability (Grad-CAM on leaves), severity scoring, and a unified JSON inference API.
+**Branch:** `4-class-classifier`
 
-Capstone project — software phases 1–2 complete; hardware/sensor integration (phase 3) deferred.
+A standalone diagnostic system that classifies tomato images into exactly **four conditions** — covering both leaf disease and fruit disorder — using existing trained models without any new training.
 
-## Results (held-out test)
-
-| Component | Model | Metric |
+| Class | Domain | Type |
 |---|---|---|
-| Router | MobileNetV3-Small | **100%** val/test accuracy |
-| Leaf classifier | EfficientNet-B0 | **0.9942** macro-F1 (10 classes) |
-| Fruit detector | YOLOv8n | **0.807** mAP@0.5 (8 classes) |
+| **Early blight** | Leaf | Fungal disease (Alternaria solani) |
+| **Blossom_End_Rot** | Fruit | Abiotic disorder (calcium deficiency) |
+| **Healthy leaf** | Leaf | No disease |
+| **Healthy plant** | Fruit | No disorder |
 
-Detailed reports: [`results/leaf_classifier_test_report.md`](results/leaf_classifier_test_report.md) · [`results/fruit_detector_test_report.md`](results/fruit_detector_test_report.md)
+---
 
-## Pipeline
+## Test results (held-out)
+
+| Class | Metric | Test score |
+|---|---|---:|
+| Early blight | F1 | **0.9899** |
+| Blossom_End_Rot | mAP@0.5 | **0.9181** |
+| Healthy leaf | F1 | **1.0000** |
+| Healthy plant | mAP@0.5 | **0.7596** |
+| **4-class macro average** | — | **0.9169** |
+| **Router accuracy** | — | **1.0000** |
+
+Full report: [`results/four_class_test_report.md`](results/four_class_test_report.md)  
+Machine-readable JSON: [`results/four_class_test_report.json`](results/four_class_test_report.json)
+
+---
+
+## How it works
+
+The system routes each image through three existing trained models and extracts only the four relevant scores — no new model weights were created.
 
 ```
-Photo → Router (leaf | fruit)
-          ├─ Leaf  → EfficientNet-B0 → class + Grad-CAM + severity_pct
-          └─ Fruit → YOLOv8n        → boxes + severity_pct
-        → Unified JSON
+Input image
+     │
+     ▼
+ Router (MobileNetV3-Small)           ← 100% routing accuracy
+     │
+     ├─ leaf  →  EfficientNet-B0      ← trained on 10 leaf classes
+     │             extracts:
+     │             • Early blight probability   (class index 1)
+     │             • Healthy leaf probability   (class index 2)
+     │             → outputs whichever is higher
+     │
+     └─ fruit →  YOLOv8n              ← trained on 8 fruit classes
+                   extracts:
+                   • Blossom_End_Rot confidence  (YOLO class 1)
+                   • Healthy plant confidence    (YOLO class 4)
+                   → outputs whichever is higher
+                   (no detection = Healthy plant by default)
 ```
 
-Architecture and design rationale: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+---
 
 ## Quick start
 
 ### 1. Clone and install
 
 ```powershell
-git clone https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
+git clone -b 4-class-classifier https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
 cd IIHR-object-detection-and-classification
 python -m venv .venv
 .venv\Scripts\activate
@@ -45,180 +75,270 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 ### 2. Model weights
 
-The three trained checkpoints are **included in this repo** under [`checkpoints/`](checkpoints/):
+Place the three trained checkpoint files under `checkpoints/`:
 
-| File | Model |
-|---|---|
-| `router_v1_mobilenet_v3_small.pt` | Leaf vs fruit router |
-| `leaf_v1_efficientnet_b0.pt` | 10-class leaf classifier |
-| `fruit_v1_yolov8n.pt` | 8-class fruit detector |
-
-No download step is required for inference after cloning.
-
-### 3. Leaf training data (optional for inference only)
-
-Inference works on any photo with the included checkpoints. **Retraining the leaf branch** requires PlantVillage tomato images — see [`data/README.md`](data/README.md).
-
-Fruit split images and labels are included under `data/splits/fruit/`.
-
-### 4. Example: run on held-out test images
-
-These are real images from the **held-out test splits** (not used during training). Ground-truth labels are shown for comparison.
-
-#### Fruit test image (in repo — runs immediately after clone)
-
-**Image:** `data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg`  
-**Ground truth:** `Blossom_End_Rot` (fruit test split)
-
-```powershell
-python -u src/infer_pipeline.py --json "data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg"
-```
-
-**Output:**
-
-```json
-{
-  "domain": "fruit",
-  "class": "Blossom_End_Rot",
-  "confidence": 0.693,
-  "severity_pct": 49.32,
-  "gradcam_overlay": null,
-  "detections": [
-    {
-      "class": "Blossom_End_Rot",
-      "confidence": 0.693,
-      "bbox": [369.0, 94.5, 525.3, 307.2]
-    },
-    {
-      "class": "Catfaced",
-      "confidence": 0.2552,
-      "bbox": [0.1, 0.0, 160.1, 289.7]
-    }
-  ],
-  "model_version": "fruit_v1_yolov8n"
-}
-```
-
-| Field | Value | Notes |
+| File | Architecture | Role |
 |---|---|---|
-| `class` | Blossom_End_Rot | Matches ground truth (highest-confidence box) |
-| `confidence` | 0.693 | Primary detection score |
-| `severity_pct` | 49.32 | Sum of disease box areas ÷ estimated fruit area |
-| `detections` | 2 boxes | YOLO can return multiple defects per image; primary class = top confidence |
+| `router_v1_mobilenet_v3_small.pt` | MobileNetV3-Small | Leaf / fruit router |
+| `leaf_v1_efficientnet_b0.pt` | EfficientNet-B0 | Leaf disease classifier (10 classes) |
+| `fruit_v1_yolov8n.pt` | YOLOv8n | Fruit defect detector (8 classes) |
 
-#### Leaf test image (PlantVillage — link `data/leaf_raw/` first)
+These are the same checkpoints trained in the `main` branch — no new training is required.
 
-Leaf test images are **not** shipped in this repo (16k images). After linking PlantVillage under `data/leaf_raw/PlantVillage/` (see [`data/README.md`](data/README.md)), run:
-
-**Image:** `data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG`  
-**Ground truth:** `Early blight` (leaf test CSV, row 321)
+### 3. Launch the web interface (recommended)
 
 ```powershell
-python -u src/infer_pipeline.py --json "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG"
+python src/app.py
 ```
 
-**Output:**
+This opens a browser window at `http://127.0.0.1:7860`. Drag-and-drop or upload any tomato image and click **Classify**.
+
+Every run automatically saves:
+- An **annotated result image** (`results/inference_results/YYYYMMDD_HHMMSS_<class>.jpg`)
+- A **JSON log entry** appended to `results/inference_results/inference_log.json`
+
+### 4. Run inference from the command line
+
+**Single image:**
+
+```powershell
+python src/four_class_infer.py path\to\tomato_image.jpg
+```
+
+**Multiple images:**
+
+```powershell
+python src/four_class_infer.py img1.jpg img2.jpg img3.jpg
+```
+
+**JSON output only (for programmatic use):**
+
+```powershell
+python src/four_class_infer.py path\to\image.jpg --json
+```
+
+---
+
+## Example outputs
+
+### Early blight leaf
+
+```powershell
+python src/four_class_infer.py "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG"
+```
+
+```
+============================================================
+Image : ...Tomato_Early_blight/07324d80...JPG
+Domain: leaf  (router confidence: 0.9987)
+
+  Predicted class : Early blight
+  Confidence      : 0.9446
+
+  Four-class scores:
+    Early blight          0.9446 <-- predicted
+    Blossom_End_Rot       0.0000
+    Healthy leaf          0.0218
+    Healthy plant         0.0000
+
+  Full leaf model top-3:
+    Early blight                        0.9446
+    Late blight                         0.0312
+    Target Spot                         0.0109
+```
+
+### Blossom_End_Rot fruit
+
+```powershell
+python src/four_class_infer.py "data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg"
+```
+
+```
+============================================================
+Image : ...Blossom_end_root_15-Copy_zoom_4_png...jpg
+Domain: fruit  (router confidence: 0.9963)
+
+  Predicted class : Blossom_End_Rot
+  Confidence      : 0.6930
+
+  Four-class scores:
+    Early blight          0.0000
+    Blossom_End_Rot       0.6930 <-- predicted
+    Healthy leaf          0.0000
+    Healthy plant         0.0000
+
+  YOLO detections (2 box(es)):
+    Blossom_End_Rot           conf=0.6930  bbox=[369.0, 94.5, 525.3, 307.2]
+    Catfaced                  conf=0.2552  bbox=[0.1, 0.0, 160.1, 289.7]
+```
+
+> Note: YOLO may detect other fruit classes (Catfaced, Mold, etc.) in the same image. The four-class system only surfaces the scores for Blossom_End_Rot and Healthy plant. Any other detection is ignored.
+
+### JSON output format
 
 ```json
 {
-  "domain": "leaf",
-  "class": "Early blight",
+  "predicted_class": "Early blight",
   "confidence": 0.9446,
-  "severity_pct": 4.42,
-  "gradcam_overlay": "results/gradcam_overlays/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455_gradcam.jpg",
+  "domain": "leaf",
+  "router_confidence": 0.9987,
+  "class_scores": {
+    "Early blight": 0.9446,
+    "Blossom_End_Rot": 0.0,
+    "Healthy leaf": 0.0218,
+    "Healthy plant": 0.0
+  },
   "detections": null,
-  "model_version": "leaf_v1_efficientnet_b0"
+  "raw_leaf_top3": [
+    {"class": "Early blight", "score": 0.9446},
+    {"class": "Late blight", "score": 0.0312},
+    {"class": "Target Spot", "score": 0.0109}
+  ],
+  "model_versions": {
+    "router": "router_v1_mobilenet_v3_small",
+    "leaf": "leaf_v1_efficientnet_b0",
+    "fruit": "fruit_v1_yolov8n"
+  }
 }
 ```
 
-| Field | Value | Notes |
+---
+
+## Python API
+
+```python
+from src.four_class_infer import FourClassDiagnosticClassifier
+
+clf = FourClassDiagnosticClassifier(device="auto")
+
+result = clf.classify("path/to/image.jpg")
+
+print(result["predicted_class"])   # e.g. "Early blight"
+print(result["confidence"])        # e.g. 0.9446
+print(result["class_scores"])      # scores for all 4 classes
+```
+
+**Constructor options:**
+
+| Parameter | Default | Description |
 |---|---|---|
-| `class` | Early blight | Matches ground truth |
-| `confidence` | 0.9446 | Softmax probability of predicted class |
-| `severity_pct` | 4.42 | HSV/Lab lesion fraction on green canopy |
-| `gradcam_overlay` | `.jpg` in `results/gradcam_overlays/` | Written automatically; highlights regions influencing the prediction |
+| `device` | `"auto"` | `auto`, `cpu`, or `cuda` |
+| `fruit_conf_threshold` | `0.20` | YOLO box confidence floor |
+| `fruit_iou_threshold` | `0.70` | YOLO NMS IoU threshold |
 
-#### Both branches in one command
+---
 
-```powershell
-python -u src/infer_pipeline.py --json `
-  "data/leaf_raw/PlantVillage/Tomato_Early_blight/07324d80-17c5-4541-9702-62e9c744ac07___RS_Erly.B 7455.JPG" `
-  "data/splits/fruit/images/test/Blossom_end_root_15-Copy_zoom_4_png.rf.8bd26be077f49081bbbe121a5e00408f.jpg"
-```
+## Detailed test results
 
-The router sends each image to the correct branch automatically (leaf → classifier + Grad-CAM; fruit → YOLO boxes).
+### Dataset
 
-### 5. Run inference on your own photo
+| Split | Leaf images | Fruit images |
+|---|---:|---:|
+| Train | 11,208 | 910 |
+| Validation | 2,402 | 199 |
+| **Test (held-out)** | **2,401** | **210** |
 
-From the repo root:
+- **Leaf:** Stratified 70 / 15 / 15 split, seed 42. Source: PlantVillage tomato subset (Kaggle).
+- **Fruit:** Group-aware 70 / 15 / 15 split. Source: Roboflow YOLOv8 export. Augmented copies of the same image are never split across train and test.
 
-```powershell
-python -u src/infer_pipeline.py --json "path\to\your_photo.jpg"
-```
+### Early blight (leaf) — classification metrics
 
-Multiple images:
+| Metric | Validation | Test (held-out) |
+|---|---:|---:|
+| Precision | 0.9804 | **1.0000** |
+| Recall | 0.9800 | **0.9800** |
+| F1 | 0.9901 | **0.9899** |
+| Support | 240 | 150 |
 
-```powershell
-python -u src/infer_pipeline.py --json photo1.jpg photo2.jpg
-```
+- **Zero** Late blight images misclassified as Early blight on the test set (vs 19 in the phase 1 baseline).
+- 3 test errors: 2 Early blight → Late blight, 1 Early blight → Septoria leaf spot.
 
-**CLI flags**
+### Healthy leaf — classification metrics
 
-| Flag | Description |
+| Metric | Validation | Test (held-out) |
+|---|---:|---:|
+| Precision | 0.9979 | **1.0000** |
+| Recall | 0.9979 | **1.0000** |
+| F1 | 0.9979 | **1.0000** |
+| Support | 476 | 238 |
+
+Perfect recall and precision on the held-out test set.
+
+### Blossom_End_Rot (fruit) — detection metrics
+
+| Metric | Validation | Test (held-out) |
+|---|---:|---:|
+| Precision | 0.8251 | **0.8621** |
+| Recall | 0.8298 | **0.9231** |
+| mAP@0.5 | 0.8830 | **0.9181** |
+| mAP@0.5:0.95 | 0.4994 | **0.5656** |
+
+Test mAP@0.5 exceeds validation — the model generalises well on this class.
+
+### Healthy plant (fruit) — detection metrics
+
+| Metric | Validation | Test (held-out) |
+|---|---:|---:|
+| Precision | 0.8355 | **0.8240** |
+| Recall | 0.4286 | **0.6176** |
+| mAP@0.5 | 0.6551 | **0.7596** |
+| mAP@0.5:0.95 | 0.3586 | **0.5016** |
+
+Test mAP@0.5 substantially exceeds validation (YOLO detects healthy tomatoes more reliably on the test set).
+
+### Training details
+
+| Component | Architecture | Best epoch | Stop reason | Best val metric |
+|---|---|---:|---|---:|
+| Router | MobileNetV3-Small | — | — | 100% accuracy |
+| Leaf classifier | EfficientNet-B0 | Phase 2, epoch 12 / 15 | Early stopping | 0.9930 macro-F1 |
+| Fruit detector | YOLOv8n | 44 / 64 | Early stopping (patience 20) | 0.761 mAP@0.5 |
+
+---
+
+## Practical notes
+
+- **Image format:** JPEG, PNG. Convert HEIC before running.
+- **Framing:** Crop so the leaf or fruit fills most of the frame for best routing.
+- **Multiple fruit defects:** YOLO may detect several boxes in one image. Only the Blossom_End_Rot and Healthy plant boxes influence the four-class output; any other detections are informational only (visible in `detections` field).
+- **GPU:** Inference runs on CPU by default. Pass `--device cuda` or set `device="cuda"` for faster batch processing.
+
+---
+
+## Known limitations
+
+| Class | Limitation |
 |---|---|
-| `IMAGE ...` | One or more image paths (required) |
-| `--json` | Print JSON only (no path headers) |
-| `--device` | `auto` (default), `cuda`, or `cpu` |
+| Early blight | 3 / 150 test images misclassified (Late blight or Septoria visual similarity). |
+| Healthy plant | Recall = 0.62 on test — YOLO occasionally misses a healthy-tomato box when the fruit occupies a small area of the frame. |
+| Out-of-scope input | If an image shows a different leaf disease (e.g. Bacterial spot), the system still outputs either "Early blight" or "Healthy leaf". It does not return an "unknown" class. |
 
-Leaf runs save a Grad-CAM overlay to `results/gradcam_overlays/<stem>_gradcam.jpg`.
-
-### Phone photos — practical notes
-
-- Convert **HEIC → JPEG** before running (Pillow does not open `.heic` by default).
-- **EXIF orientation is not applied** — rotate/export so the image looks correct on disk.
-- Crop so the **leaf or fruit fills most of the frame** for best routing and severity estimates.
-
-## Training
-
-```powershell
-# Leaf manifests (after data/leaf_raw is set up)
-python src/split_leaf_manifest.py --write
-python src/build_router_manifest.py --write
-
-# Router
-python src/train.py --config configs/router.yaml
-
-# Leaf classifier (two-phase fine-tune in config)
-python src/train.py --config configs/leaf.yaml
-
-# Fruit YOLO
-python src/train_fruit_yolo.py --config configs/fruit_yolo.yaml
-```
-
-Evaluation scripts: `scripts/eval_leaf_test_report.py`, `scripts/eval_fruit_test_report.py`, `scripts/verify_leaf_checkpoint.py`
+---
 
 ## Project layout
 
 ```
-├── configs/          # YAML training configs
-├── data/             # Splits, audit, data setup docs
-├── checkpoints/      # Trained model weights (.pt)
-├── results/          # Test reports + Grad-CAM outputs
-├── scripts/          # Evaluation and analysis utilities
-└── src/              # Training, inference, severity, Grad-CAM
+├── src/
+│   └── four_class_infer.py   ← four-class inference module (this branch)
+│   └── infer_pipeline.py     ← original 10+8 class pipeline (main)
+├── configs/
+│   └── four_class.yaml       ← class mapping config (this branch)
+├── checkpoints/              ← trained model weights (.pt)
+├── results/
+│   └── four_class_test_report.md    ← detailed test report (this branch)
+│   └── four_class_test_report.json  ← machine-readable metrics
+│   └── leaf_classifier_test_report.md
+│   └── fruit_detector_test_report.md
+└── data/splits/              ← train / val / test manifests
 ```
 
-## Known limitations
-
-- **Catfaced** (fruit): high recall, moderate precision; confusion with Fruit_Cracking.
-- **Spotted_Wilt_Virus** (fruit): recall limited by data scarcity and Late_Blight visual overlap.
-- **Fruit severity_pct**: v1 box-geometry heuristic; sensitive to photo cropping (see fruit test report).
+---
 
 ## License
 
-Code: [MIT](LICENSE). Training datasets remain under their original licenses (PlantVillage, Kaggle/Roboflow fruit export).
+Code: [MIT](LICENSE). Training datasets remain under their original licenses (PlantVillage: academic non-commercial; Roboflow fruit export: see source).
 
-## Citation / datasets
+## Datasets
 
-- Leaf: PlantVillage (`emmarex/plantdisease` on Kaggle)
-- Fruit: `profnourasemary/tomato-dataset` (Roboflow YOLOv8 export)
+- **Leaf:** PlantVillage tomato subset — `emmarex/plantdisease` on Kaggle
+- **Fruit:** `profnourasemary/tomato-dataset` on Roboflow (YOLOv8 export)

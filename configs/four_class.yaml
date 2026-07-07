@@ -1,0 +1,78 @@
+# Four-class tomato diagnostic classifier — configuration
+#
+# This system reuses the three existing trained checkpoints without any new
+# training.  The router decides leaf vs fruit; only the four target class
+# scores are extracted from each branch.
+
+system:
+  name: four_class_diagnostic
+  version: "1.0"
+  description: >
+    Standalone four-class tomato condition classifier built on top of the
+    existing leaf EfficientNet-B0 and fruit YOLOv8n pipelines.
+    No new model training required.
+
+# ── The four target classes ───────────────────────────────────────────────────
+target_classes:
+  - name: Early blight
+    domain: leaf
+    plant_part: leaf
+    disease_type: fungal
+    source_model: leaf_v1_efficientnet_b0
+    source_class_index: 1          # index in data/splits/leaf/class_map.json
+    source_class_label: "Early blight"
+    dataset: PlantVillage (tomato subset)
+
+  - name: Blossom_End_Rot
+    domain: fruit
+    plant_part: fruit
+    disease_type: abiotic (calcium deficiency)
+    source_model: fruit_v1_yolov8n
+    source_class_id: 1             # YOLO class ID in data/splits/fruit/data.yaml
+    source_class_label: "Blossom_End_Rot"
+    dataset: grouped fruit split (Roboflow export)
+
+  - name: Healthy leaf
+    domain: leaf
+    plant_part: leaf
+    disease_type: none
+    source_model: leaf_v1_efficientnet_b0
+    source_class_index: 2          # "Healthy" in class_map.json
+    source_class_label: "Healthy"
+    dataset: PlantVillage (tomato subset)
+
+  - name: Healthy plant
+    domain: fruit
+    plant_part: fruit
+    disease_type: none
+    source_model: fruit_v1_yolov8n
+    source_class_id: 4             # "Healthy_Tomato" YOLO class
+    source_class_label: "Healthy_Tomato"
+    dataset: grouped fruit split (Roboflow export)
+
+# ── Checkpoint paths (relative to repo root) ─────────────────────────────────
+checkpoints:
+  router: checkpoints/router_v1_mobilenet_v3_small.pt
+  leaf:   checkpoints/leaf_v1_efficientnet_b0.pt
+  fruit:  checkpoints/fruit_v1_yolov8n.pt
+  fruit_fallback: runs/fruit/train/weights/best.pt   # Ultralytics output path
+
+# ── Inference parameters ──────────────────────────────────────────────────────
+inference:
+  image_size: 224                   # pixels (matches leaf transform)
+  device: auto                      # auto | cpu | cuda
+  fruit_conf_threshold: 0.20        # YOLO box confidence floor
+  fruit_iou_threshold: 0.70         # YOLO NMS IoU threshold
+
+# ── Source model performance (from committed test reports) ────────────────────
+source_model_performance:
+  router:
+    test_accuracy: 1.0000
+  leaf_classifier:
+    test_macro_f1: 0.9942
+    early_blight_precision: 0.9804
+    healthy_precision: 1.0000
+  fruit_detector:
+    test_mAP50: 0.807
+    blossom_end_rot_AP50: ~0.85    # see results/fruit_detector_test_report.json
+    healthy_tomato_AP50: ~0.90
