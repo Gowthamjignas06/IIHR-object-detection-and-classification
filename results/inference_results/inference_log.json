@@ -1,0 +1,131 @@
+[
+  {
+    "timestamp": "2026-07-09T01:49:20.919712",
+    "result_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_014920_Healthy_Tomato_result.jpg",
+    "explain_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_014920_Healthy_Tomato_explain.jpg",
+    "domain": "fruit",
+    "class": "Healthy_Tomato",
+    "confidence": 0.8947,
+    "severity_pct": 0.0,
+    "gradcam_overlay": null,
+    "detections": [
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.8947,
+        "bbox": [
+          295.8,
+          335.8,
+          408.7,
+          459.9
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.8813,
+        "bbox": [
+          109.9,
+          111.0,
+          204.5,
+          224.5
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.869,
+        "bbox": [
+          208.6,
+          104.0,
+          322.1,
+          225.0
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.6678,
+        "bbox": [
+          237.4,
+          208.8,
+          360.8,
+          341.3
+        ]
+      }
+    ],
+    "model_version": "fruit_v1_yolov8n"
+  },
+  {
+    "timestamp": "2026-07-09T01:49:21.397872",
+    "result_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_014921_Healthy_Tomato_result.jpg",
+    "explain_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_014921_Healthy_Tomato_explain.jpg",
+    "domain": "fruit",
+    "class": "Healthy_Tomato",
+    "confidence": 0.8947,
+    "severity_pct": 0.0,
+    "gradcam_overlay": null,
+    "detections": [
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.8947,
+        "bbox": [
+          295.8,
+          335.8,
+          408.7,
+          459.9
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.8813,
+        "bbox": [
+          109.9,
+          111.0,
+          204.5,
+          224.5
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.869,
+        "bbox": [
+          208.6,
+          104.0,
+          322.1,
+          225.0
+        ]
+      },
+      {
+        "class": "Healthy_Tomato",
+        "confidence": 0.6678,
+        "bbox": [
+          237.4,
+          208.8,
+          360.8,
+          341.3
+        ]
+      }
+    ],
+    "model_version": "fruit_v1_yolov8n"
+  },
+  {
+    "timestamp": "2026-07-09T01:50:00.358247",
+    "result_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_015000_Anthracnose_result.jpg",
+    "explain_image": "C:\\Users\\hp\\capstone gj\\IIHR-object-detection-and-classification\\results\\inference_results\\20260709_015000_Anthracnose_explain.jpg",
+    "domain": "fruit",
+    "class": "Anthracnose",
+    "confidence": 0.7857,
+    "severity_pct": 36.44,
+    "gradcam_overlay": null,
+    "detections": [
+      {
+        "class": "Anthracnose",
+        "confidence": 0.7857,
+        "bbox": [
+          3.4,
+          8.9,
+          323.1,
+          475.7
+        ]
+      }
+    ],
+    "model_version": "fruit_v1_yolov8n"
+  }
+]
