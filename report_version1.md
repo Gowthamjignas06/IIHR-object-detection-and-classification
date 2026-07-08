@@ -840,13 +840,13 @@ Every leaf image goes through the following steps before being fed to any model:
 
 ### Model 2 — Leaf Classifier (EfficientNet-B0)
 
-**Purpose:** Given a leaf image, classify it into one of 10 leaf disease/health classes.
+**Purpose:** Given a leaf image, classify leaf disease/health classes.
 
 **Architecture:**
 - EfficientNet-B0, pre-trained on ImageNet
-- Final classifier layer replaced: 1280 features → 10-class linear layer
+- Final classifier layer replaced: 1280 features → class linear layer
 - Input: 224×224 RGB image
-- Output: 10 probabilities (one per class) via softmax
+- Output: probabilities (one per class) via softmax
 
 **Why EfficientNet-B0?**
 - Excellent accuracy-to-size ratio — designed to be efficient
