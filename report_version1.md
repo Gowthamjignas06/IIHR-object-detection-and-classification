@@ -3,7 +3,7 @@
 
 **Branch:** `4-class-classifier`  
 **Date:** 2026-07-07  
-**Written for:** Future developers joining this project
+**Written for:** understanding of the mentors
 
 ---
 
