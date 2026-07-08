@@ -27,7 +27,15 @@ Architecture and design rationale: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ## Quick start
 
-### 1. Clone and install
+### 1. Launch the web interface (recommended)
+
+```powershell
+python src/app.py
+```
+
+Opens `http://127.0.0.1:7860` in your browser. Upload any tomato image — leaf or fruit — and click **Diagnose**. Results are automatically saved to `results/inference_results/`.
+
+### 2. Clone and install
 
 ```powershell
 git clone https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
