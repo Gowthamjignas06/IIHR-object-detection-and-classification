@@ -55,8 +55,8 @@ Tomato disease comes in two completely different visual forms:
 A single model architecture cannot handle both optimally. This is why the system uses **three separate models**:
 
 1. **Router** — first decides: "is this a leaf or a fruit photo?"
-2. **Leaf classifier** — handles leaf photos (10 possible leaf disease classes)
-3. **Fruit detector** — handles fruit photos (8 possible fruit disorder classes)
+2. **Leaf classifier** — handles leaf photos 
+3. **Fruit detector** — handles fruit photos 
 
 ### Why not retrain a new single model for 4 classes?
 
