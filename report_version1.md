@@ -11,18 +11,19 @@
 
 1. [What this project does](#1-what-this-project-does)
 2. [Why it was built this way](#2-why-it-was-built-this-way)
-3. [Repository structure — every file explained](#3-repository-structure--every-file-explained)
-4. [The datasets](#4-the-datasets)
-5. [Data preprocessing](#5-data-preprocessing)
-6. [The three models](#6-the-three-models)
-7. [How training works](#7-how-training-works)
-8. [How inference works](#8-how-inference-works)
-9. [The four-class system (this branch)](#9-the-four-class-system-this-branch)
-10. [The Gradio web interface](#10-the-gradio-web-interface)
-11. [Test results — all numbers explained](#11-test-results--all-numbers-explained)
-12. [How to set up and run from scratch](#12-how-to-set-up-and-run-from-scratch)
-13. [Known limitations](#13-known-limitations)
-14. [Glossary](#14-glossary)
+3. [Architecture and system design](#3-architecture-and-system-design)
+4. [Repository structure — every file explained](#4-repository-structure--every-file-explained)
+5. [The datasets](#5-the-datasets)
+6. [Data preprocessing](#6-data-preprocessing)
+7. [The three models](#7-the-three-models)
+8. [How training works](#8-how-training-works)
+9. [How inference works](#9-how-inference-works)
+10. [The four-class system (this branch)](#10-the-four-class-system-this-branch)
+11. [The Gradio web interface](#11-the-gradio-web-interface)
+12. [Test results — all numbers explained](#12-test-results--all-numbers-explained)
+13. [How to set up and run from scratch](#13-how-to-set-up-and-run-from-scratch)
+14. [Known limitations](#14-known-limitations)
+15. [Glossary](#15-glossary)
 
 ---
 
@@ -66,7 +67,602 @@ The existing models were already trained and tested on large datasets with high 
 
 ---
 
-## 3. Repository structure — every file explained
+## 3. Architecture and system design
+
+---
+
+### 3.1 High-level system overview
+
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║                  TOMATO DISEASE DIAGNOSTIC SYSTEM                    ║
+║                      (4-class-classifier branch)                     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║                                                                      ║
+║   ┌──────────────┐      ┌─────────────────────────────────────────┐ ║
+║   │   User /     │      │             INFERENCE LAYER              │ ║
+║   │   Web UI     │─────▶│                                         │ ║
+║   │  (Gradio)    │      │  ┌──────────┐   leaf  ┌──────────────┐  │ ║
+║   └──────────────┘      │  │  Router  │────────▶│  Leaf Model  │  │ ║
+║                         │  │  (MNv3)  │         │  (EffNet-B0) │  │ ║
+║   ┌──────────────┐      │  │          │  fruit  └──────┬───────┘  │ ║
+║   │  CLI / API   │─────▶│  │ leaf vs  │         ┌──────▼───────┐  │ ║
+║   │  (Python)    │      │  │  fruit   │────────▶│ Fruit Model  │  │ ║
+║   └──────────────┘      │  └──────────┘         │  (YOLOv8n)   │  │ ║
+║                         │                       └──────┬───────┘  │ ║
+║                         │                              │           │ ║
+║                         │         ┌────────────────────▼─────────┐ │ ║
+║                         │         │   4-Class Score Extractor    │ │ ║
+║                         │         │  Early blight / BER /        │ │ ║
+║                         │         │  Healthy leaf / Healthy plant │ │ ║
+║                         │         └────────────────────┬─────────┘ │ ║
+║                         └──────────────────────────────┼───────────┘ ║
+║                                                        │             ║
+║   ┌────────────────────────────────────────────────────▼───────────┐ ║
+║   │                    OUTPUT LAYER                                 │ ║
+║   │  predicted_class · confidence · class_scores · Grad-CAM ·      │ ║
+║   │  YOLO boxes · domain · saved result images · JSON log          │ ║
+║   └─────────────────────────────────────────────────────────────── ┘ ║
+╚══════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 3.2 Full inference data flow
+
+This diagram shows exactly what happens to an image from the moment it enters the system to the final output:
+
+```
+                          INPUT IMAGE
+                              │
+                              ▼
+                 ┌────────────────────────┐
+                 │   Image Preprocessing   │
+                 │  • Open with PIL        │
+                 │  • Convert to RGB       │
+                 │  • CLAHE equalisation   │
+                 │  • Resize → 224×224     │
+                 │  • ToTensor             │
+                 │  • Normalise (ImageNet) │
+                 └────────────┬───────────┘
+                              │  tensor [1, 3, 224, 224]
+                              ▼
+                 ┌────────────────────────┐
+                 │      ROUTER MODEL       │
+                 │  MobileNetV3-Small      │
+                 │  Input:  224×224 tensor │
+                 │  Output: [p_leaf,       │
+                 │           p_fruit]      │
+                 │  Argmax → 0 or 1        │
+                 └──────┬─────────┬───────┘
+                        │         │
+                   p_leaf>p_fruit  p_fruit>p_leaf
+                        │         │
+           ┌────────────▼─┐     ┌─▼────────────────┐
+           │  LEAF BRANCH  │     │   FRUIT BRANCH    │
+           │               │     │                   │
+           │ EfficientNet  │     │    YOLOv8n        │
+           │    B0         │     │                   │
+           │               │     │ Input: image path │
+           │ Input: tensor │     │ Output: boxes     │
+           │ Output:       │     │  [x1,y1,x2,y2,   │
+           │  10 softmax   │     │   conf, class_id] │
+           │  probs        │     │                   │
+           │               │     │ For each box:     │
+           │ Extract:      │     │  Extract:         │
+           │  idx1 = p_eb  │     │  cls1 → BER conf  │
+           │  idx2 = p_hl  │     │  cls4 → HP conf   │
+           └──────┬────────┘     └────────┬──────────┘
+                  │                       │
+                  ▼                       ▼
+           ┌────────────┐         ┌───────────────┐
+           │  GRAD-CAM   │         │  YOLO BOX     │
+           │  Heatmap    │         │  OVERLAY      │
+           │  (explainab)│         │  (explainab)  │
+           └──────┬──────┘         └──────┬────────┘
+                  │                       │
+                  └───────────┬───────────┘
+                              │
+                              ▼
+                 ┌────────────────────────┐
+                 │   4-CLASS RESULT DICT   │
+                 │                        │
+                 │  predicted_class: str  │
+                 │  confidence: float     │
+                 │  domain: str           │
+                 │  router_confidence: f  │
+                 │  class_scores: dict    │
+                 │  detections: list|None │
+                 │  raw_leaf_top3: list   │
+                 │  model_versions: dict  │
+                 └────────────┬───────────┘
+                              │
+                    ┌─────────┴──────────┐
+                    │                    │
+                    ▼                    ▼
+           ┌──────────────┐    ┌──────────────────┐
+           │  Gradio UI   │    │  File System      │
+           │  (browser)   │    │                   │
+           │              │    │ *_result.jpg      │
+           │  3 columns:  │    │ *_explain.jpg     │
+           │  • upload    │    │ inference_log.json│
+           │  • heatmap/  │    └──────────────────┘
+           │    boxes     │
+           │  • scores    │
+           └──────────────┘
+```
+
+---
+
+### 3.3 Training pipeline design
+
+The training pipeline is separate from inference and was run once to produce the three `.pt` checkpoint files.
+
+```
+╔══════════════════════════════════════════════════════════╗
+║                   TRAINING PIPELINE                       ║
+╚══════════════════════════════════════════════════════════╝
+
+  RAW DATA SOURCES
+  ┌──────────────────┐    ┌──────────────────────────┐
+  │  PlantVillage    │    │  Roboflow Fruit Dataset   │
+  │  (16k images,   │    │  (1319 images + YOLO .txt │
+  │   10 folders)   │    │   labels, 440 unique src) │
+  └────────┬─────────┘    └────────────┬─────────────┘
+           │                           │
+           ▼                           ▼
+  ┌──────────────────┐    ┌──────────────────────────┐
+  │ split_leaf_      │    │ split_fruit_groups.py     │
+  │ manifest.py      │    │                           │
+  │                  │    │ Groups images by Roboflow │
+  │ Stratified split │    │ source stem BEFORE split  │
+  │ 70/15/15, seed42 │    │ → prevents augmentation  │
+  │                  │    │   leakage across splits  │
+  │ → train.csv      │    │ → images/train|val|test/  │
+  │   val.csv        │    │   labels/train|val|test/  │
+  │   test.csv       │    │   data.yaml               │
+  │   class_map.json │    └────────────┬─────────────┘
+  └────────┬─────────┘                 │
+           │                           │
+           ▼                           │
+  ┌──────────────────┐                 │
+  │ build_router_    │                 │
+  │ manifest.py      │                 │
+  │                  │                 │
+  │ Combines leaf    │                 │
+  │ + fruit images   │                 │
+  │ with domain label│                 │
+  │ → router/        │                 │
+  │   train|val|test │                 │
+  └────────┬─────────┘                 │
+           │                           │
+  ─────────┼───────────────────────────┼──────────────────
+           ▼                           ▼
+  ┌────────────────────┐   ┌───────────────────────────┐
+  │   train.py         │   │  train_fruit_yolo.py       │
+  │  (router + leaf)   │   │  (Ultralytics YOLO)        │
+  │                    │   │                            │
+  │  Phase 1:          │   │  Pre-trained: yolov8n.pt   │
+  │  • Freeze backbone │   │  (COCO weights)            │
+  │  • Train head only │   │                            │
+  │  • 10 epochs max   │   │  Fine-tune on fruit split: │
+  │  • Monitor val F1  │   │  • 100 epochs max          │
+  │                    │   │  • patience=20             │
+  │  Phase 2:          │   │  • 640×640 input           │
+  │  • Unfreeze last   │   │  • batch=8                 │
+  │    3 feat blocks   │   │                            │
+  │  • LR = 0.00005    │   │  Best weights saved to:    │
+  │  • 15 epochs max   │   │  runs/fruit/train/         │
+  │  • Early stop p=4  │   │    weights/best.pt         │
+  └────────┬───────────┘   └──────────────┬────────────┘
+           │                              │
+           ▼                              ▼
+  ┌──────────────────────────────────────────────────────┐
+  │                  checkpoints/                         │
+  │                                                      │
+  │  router_v1_mobilenet_v3_small.pt   (2 classes)       │
+  │  leaf_v1_efficientnet_b0.pt        (10 classes)      │
+  │  fruit_v1_yolov8n.pt               (8 classes)       │
+  └──────────────────────────────────────────────────────┘
+```
+
+---
+
+### 3.4 Model architecture details
+
+#### Router — MobileNetV3-Small
+
+```
+Input image 224×224×3
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│          MobileNetV3-Small backbone        │
+│  (Pre-trained on ImageNet — frozen in P1) │
+│                                           │
+│  Inverted residual blocks with            │
+│  Squeeze-and-Excitation attention         │
+│  (efficient depthwise separable convs)    │
+│                                           │
+│  Output feature map: 576 channels         │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+         ┌───────────────────────┐
+         │   AdaptiveAvgPool2d   │  → [576]
+         │   Hardswish           │
+         │   Linear(576 → 1024)  │
+         │   Hardswish           │
+         │   Dropout(0.2)        │
+         │   Linear(1024 → 2)    │  ← replaced head
+         └───────────┬───────────┘
+                     │
+                     ▼
+              Softmax → [p_leaf, p_fruit]
+              Argmax  → 0 (leaf) or 1 (fruit)
+```
+
+#### Leaf Classifier — EfficientNet-B0
+
+```
+Input image 224×224×3
+        │
+        ▼  CLAHE → resize → normalize → tensor
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│         EfficientNet-B0 backbone           │
+│  (Pre-trained on ImageNet)                │
+│                                           │
+│  features[0]:  Conv stem                 │
+│  features[1]:  MBConv block ×1            │
+│  features[2]:  MBConv block ×2            │
+│  features[3]:  MBConv block ×2            │
+│  features[4]:  MBConv block ×3            │
+│  features[5]:  MBConv block ×3            │
+│  features[6]:  MBConv block ×4   ◀ Grad-CAM target layer
+│  features[7]:  MBConv block ×1            │
+│  features[8]:  Conv head                 │
+│                                           │
+│  Training:                               │
+│    Phase 1: only classifier trained      │
+│    Phase 2: features[6][7][8] + classif  │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+         ┌───────────────────────┐
+         │   AdaptiveAvgPool2d   │  → [1280]
+         │   Dropout(0.2)        │
+         │   Linear(1280 → 10)   │  ← replaced head
+         └───────────┬───────────┘
+                     │
+                     ▼
+       Softmax → 10 probabilities
+       [p_0, p_1, ..., p_9]
+              │
+              ├── p_1 = "Early blight" score  ◀ extracted here
+              └── p_2 = "Healthy" score       ◀ extracted here
+```
+
+#### Fruit Detector — YOLOv8n
+
+```
+Input image (any size, auto-resized to 640×640)
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│            YOLOv8n Backbone                │
+│  (Pre-trained on COCO)                    │
+│                                           │
+│  CSP-Darknet layers (depthwise convs)     │
+│  C2f blocks (cross-stage partial)         │
+│  SPPF (Spatial Pyramid Pooling Fast)      │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+┌───────────────────────────────────────────┐
+│              YOLOv8 Neck                   │
+│  FPN (Feature Pyramid Network)            │
+│  PAN (Path Aggregation Network)           │
+│  Merges features at multiple scales       │
+│  (detects objects of different sizes)     │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+┌───────────────────────────────────────────┐
+│         Detection Head (3 scales)         │
+│  For each anchor point outputs:           │
+│  [x, y, w, h, objectness, class_probs×8] │
+└────────────────────┬──────────────────────┘
+                     │
+                     ▼
+         NMS (Non-Maximum Suppression)
+         conf threshold = 0.20
+         IoU threshold  = 0.70
+                     │
+                     ▼
+       List of detections per image:
+       [class_id, confidence, x1, y1, x2, y2]
+              │
+              ├── class 1 = "Blossom_End_Rot"  ◀ extracted here
+              └── class 4 = "Healthy_Tomato"   ◀ extracted here
+```
+
+---
+
+### 3.5 Four-class score extraction design
+
+This is the core design of this branch. The diagram shows how the 4-class output is assembled from the existing model scores:
+
+```
+                 ┌─── LEAF BRANCH ─────────────────────────┐
+                 │                                          │
+                 │   EfficientNet-B0 softmax output         │
+                 │   (10 values summing to 1.0)             │
+                 │                                          │
+                 │   Index:  0    1    2    3  ...  9        │
+                 │   Class:  BS  [EB] [HL]  LB ...  TMV     │
+                 │   Value: 0.01 0.94 0.02 0.01 ...  0.0    │
+                 │               ↑    ↑                     │
+                 │          extracted  extracted            │
+                 │               │    │                     │
+                 └───────────────┼────┼─────────────────────┘
+                                 │    │
+                         ┌───────┘    └────────┐
+                         │                     │
+                         ▼                     ▼
+               ┌──────────────────┐  ┌──────────────────┐
+               │  "Early blight"  │  │  "Healthy leaf"  │
+               │   score = 0.94   │  │   score = 0.02   │
+               └────────┬─────────┘  └────────┬─────────┘
+                        │                     │
+                        └──────────┬──────────┘
+                                   │  max(0.94, 0.02) → 0.94
+                                   ▼
+                          Prediction: Early blight
+                          Confidence: 0.9400
+
+
+                 ┌─── FRUIT BRANCH ────────────────────────┐
+                 │                                          │
+                 │   YOLOv8n detection output               │
+                 │   (variable number of boxes)             │
+                 │                                          │
+                 │   Box 1: class=1 (BER),  conf=0.69       │
+                 │   Box 2: class=2 (Cat),  conf=0.26       │
+                 │   Box 3: class=4 (HT),   conf=0.31       │
+                 │              ↑                  ↑        │
+                 │         scan for cls1      scan for cls4 │
+                 │         max_conf=0.69      max_conf=0.31 │
+                 └───────────────┬────────────────┬─────────┘
+                                 │                │
+                                 ▼                ▼
+               ┌──────────────────────┐  ┌──────────────────┐
+               │  "Blossom_End_Rot"   │  │  "Healthy plant" │
+               │   score = 0.69       │  │   score = 0.31   │
+               └──────────┬───────────┘  └────────┬─────────┘
+                          │                       │
+                          └──────────┬────────────┘
+                                     │  max(0.69, 0.31) → 0.69
+                                     ▼
+                            Prediction: Blossom_End_Rot
+                            Confidence: 0.6900
+
+               Edge case: no detections at all
+               → both BER=0.0, HP=0.0
+               → default HP=1.0 (no pathology = healthy)
+               → Prediction: Healthy plant, confidence 1.0
+```
+
+---
+
+### 3.6 Grad-CAM architecture (explainability)
+
+Grad-CAM explains the leaf model's decision by tracing which parts of the image caused the highest activation for the predicted class.
+
+```
+  Input image (224×224×3)
+        │
+        ▼
+  EfficientNet-B0 forward pass
+        │
+        │  ┌──── Register hooks at features[-1] ────┐
+        │  │  (last convolutional feature block)     │
+        │  │                                         │
+        ▼  ▼                                         │
+  feature maps A                              gradients G
+  shape: [1, C, H, W]                        shape: [1, C, H, W]
+  (captured by forward hook)                 (captured by backward hook)
+        │                                         │
+        │                                         │ backward pass on
+        │                                         │ predicted class score
+        │                                         │
+        └─────────────────┬───────────────────────┘
+                          │
+                          ▼
+              weights w = mean(G, dim=[H,W])
+              shape: [C, 1, 1]
+                          │
+                          ▼
+              CAM = ReLU( sum(w × A, dim=C) )
+              shape: [H, W]
+                          │
+                          ▼
+              Resize CAM to 224×224
+              Normalize to [0, 1]
+                          │
+                          ▼
+              Apply COLORMAP_JET (blue→red)
+              Blend with original image (α=0.5)
+                          │
+                          ▼
+              Heatmap overlay image (224×224×3)
+              Red = model looked here most
+              Blue = model ignored this area
+```
+
+---
+
+### 3.7 Severity scoring design
+
+The system also estimates how severe the disease is, using two different methods depending on the domain:
+
+```
+  LEAF SEVERITY (HSV + Lab colour science)
+  ─────────────────────────────────────────
+  Input: RGB image
+      │
+      ▼  Convert to HSV
+  Canopy mask = pixels where:
+      Hue ∈ [25°, 95°]  (green range)
+      Saturation > 40
+      Value > 40
+      │
+      ▼  Convert to Lab colour space
+  For each canopy pixel:
+      deviation = |a - median_a| + |b - median_b|
+      (Lab "a" and "b" measure colour shift from healthy green)
+      │
+      ▼  Threshold deviation > 18.0
+  Lesion mask = canopy pixels with high colour deviation
+      │
+      ▼
+  severity_pct = (lesion pixels / canopy pixels) × 100
+
+
+  FRUIT SEVERITY (bounding box geometry)
+  ─────────────────────────────────────────
+  Input: list of YOLO detections + image dimensions
+      │
+      ▼
+  Separate disease boxes from healthy boxes
+      │
+      ├── disease_area = sum of (w × h) for each disease box
+      │
+      └── estimated_fruit_area:
+              ├── if healthy boxes exist → union of healthy boxes
+              ├── if multiple boxes exist → union of all boxes
+              └── if single disease box → full image area (fallback)
+      │
+      ▼
+  severity_pct = min(100, disease_area / fruit_area × 100)
+```
+
+---
+
+### 3.8 Data storage design
+
+```
+  checkpoints/          ← Model weights (binary, ~43 MB total, not in git)
+  │
+  ├── router_v1_mobilenet_v3_small.pt
+  │     Contents: {model_state_dict, config, val_metrics, phase, epoch}
+  │
+  ├── leaf_v1_efficientnet_b0.pt
+  │     Contents: {model_state_dict, config, class_names[10], val_metrics,
+  │                phase, epoch, metrics_history, best_macro_f1,
+  │                completed_phases, best_phase, best_epoch}
+  │
+  └── fruit_v1_yolov8n.pt
+        Contents: Ultralytics YOLO standard format
+                  Loaded via: YOLO(path).predict(...)
+
+  data/splits/          ← Data manifests (text/CSV, committed to git)
+  │
+  ├── leaf/
+  │     ├── train.csv   11,208 rows: image_path, label
+  │     ├── val.csv      2,402 rows
+  │     ├── test.csv     2,401 rows
+  │     └── class_map.json  {class_names: [...], class_to_idx: {...}}
+  │
+  ├── fruit/
+  │     ├── data.yaml   YOLO format: path, train, val, test, nc, names
+  │     ├── labels/train/*.txt   YOLO box annotations (committed)
+  │     ├── labels/val/*.txt
+  │     └── labels/test/*.txt
+  │
+  └── router/
+        ├── train.csv   12,118 rows: image_path, domain, domain_idx
+        ├── val.csv      2,601 rows
+        ├── test.csv     2,611 rows
+        └── domain_map.json  {leaf: 0, fruit: 1}
+
+  results/              ← Reports and output images
+  │
+  ├── four_class_test_report.json    ← Structured metrics
+  ├── four_class_test_report.md      ← Human-readable report
+  ├── leaf_classifier_test_report.json
+  ├── fruit_detector_test_report.json
+  └── inference_results/
+        ├── inference_log.json       ← Appended every run: [{timestamp,
+        │                               predicted_class, confidence,
+        │                               domain, class_scores, paths}]
+        ├── *_result.jpg             ← Annotated score panel image
+        └── *_explain.jpg            ← Grad-CAM or detection overlay
+```
+
+---
+
+### 3.9 Component interaction map
+
+Shows which Python files call which other files:
+
+```
+  app.py
+    ├── imports four_class_infer.py  (FourClassDiagnosticClassifier)
+    └── imports gradcam.py           (compute_gradcam, overlay_gradcam)
+
+  four_class_infer.py
+    ├── imports evaluate.py          (load_leaf_checkpoint,
+    │                                 load_router_checkpoint, repo_root)
+    ├── imports transforms.py        (build_leaf_transforms)
+    └── imports train_fruit_yolo.py  (resolve_data_yaml,
+                                      write_resolved_data_yaml)
+
+  infer_pipeline.py  [main branch pipeline — unchanged]
+    ├── imports evaluate.py
+    ├── imports gradcam.py
+    ├── imports models/leaf_classifier.py
+    ├── imports models/router.py
+    ├── imports severity.py
+    └── imports transforms.py
+
+  evaluate.py
+    ├── imports models/leaf_classifier.py  (build_leaf_classifier)
+    └── imports models/router.py           (build_router)
+
+  train.py
+    ├── imports datasets.py          (build_leaf_dataloader,
+    │                                 build_router_dataloader)
+    ├── imports models/leaf_classifier.py
+    ├── imports models/router.py
+    └── imports transforms.py
+
+  datasets.py
+    └── imports transforms.py        (build_leaf_transforms)
+```
+
+---
+
+### 3.10 Technology stack
+
+| Layer | Technology | Version | Purpose |
+|---|---|---|---|
+| **Language** | Python | 3.10+ | All code |
+| **Deep learning** | PyTorch | ≥ 2.6.0 | Model training and inference |
+| **Vision models** | torchvision | ≥ 0.21.0 | EfficientNet-B0, MobileNetV3 |
+| **Object detection** | Ultralytics | ≥ 8.3.107 | YOLOv8n training + inference |
+| **Image processing** | OpenCV (cv2) | ≥ 4.11.0 | CLAHE, HSV masking, Grad-CAM resize |
+| **Image I/O** | Pillow (PIL) | ≥ 10.0.0 | Loading, converting, saving images |
+| **Array math** | NumPy | ≥ 2.1.1 | Heatmap computation, severity |
+| **Config** | PyYAML | ≥ 6.0 | Training configs |
+| **Web UI** | Gradio | ≥ 4.0.0 | Browser-based demo interface |
+| **Hardware** | NVIDIA RTX 3050 Ti | 4GB VRAM | Training (GPU) |
+| **OS** | Windows 10/11 | — | Development environment |
+
+---
+
+## 4. Repository structure — every file explained
 
 ```
 IIHR-object-detection-and-classification/
@@ -136,7 +732,7 @@ IIHR-object-detection-and-classification/
 
 ---
 
-## 4. The datasets
+## 5. The datasets
 
 ### Dataset 1 — Leaf images (PlantVillage)
 
@@ -184,7 +780,7 @@ IIHR-object-detection-and-classification/
 
 ---
 
-## 5. Data preprocessing
+## 6. Data preprocessing
 
 ### Image preprocessing pipeline (leaf branch)
 
@@ -220,7 +816,7 @@ Every leaf image goes through the following steps before being fed to any model:
 
 ---
 
-## 6. The three models
+## 7. The three models
 
 ### Model 1 — Router (MobileNetV3-Small)
 
@@ -291,7 +887,7 @@ The dataset has unequal numbers of images per class (e.g., 481 TYLCV images vs o
 
 ---
 
-## 7. How training works
+## 8. How training works
 
 ### Training the router and leaf classifier
 
@@ -350,7 +946,7 @@ python src/split_fruit_groups.py
 
 ---
 
-## 8. How inference works
+## 9. How inference works
 
 ### The original full pipeline (`src/infer_pipeline.py`)
 
@@ -404,7 +1000,7 @@ If the model is working correctly, the heatmap should highlight the disease lesi
 
 ---
 
-## 9. The four-class system (this branch)
+## 10. The four-class system (this branch)
 
 ### What makes this branch different from `main`
 
@@ -475,7 +1071,7 @@ Documents exactly which class index from which model maps to which 4-class outpu
 
 ---
 
-## 10. The Gradio web interface
+## 11. The Gradio web interface
 
 **File:** `src/app.py`  
 **Run:** `python src/app.py`  
@@ -522,7 +1118,7 @@ Documents exactly which class index from which model maps to which 4-class outpu
 
 ---
 
-## 11. Test results — all numbers explained
+## 12. Test results — all numbers explained
 
 All testing was done on **held-out test data** — images that were never used during training or for any hyperparameter decision.
 
@@ -582,7 +1178,7 @@ This improvement happened because Phase 2 training unfroze the backbone and let 
 
 ---
 
-## 12. How to set up and run from scratch
+## 13. How to set up and run from scratch
 
 ### Step 1 — Clone the branch
 
@@ -655,7 +1251,7 @@ print(result["confidence"])       # e.g. 0.9446
 
 ---
 
-## 13. Known limitations
+## 14. Known limitations
 
 ### Current limitations
 
@@ -679,7 +1275,7 @@ print(result["confidence"])       # e.g. 0.9446
 
 ---
 
-## 14. Glossary
+## 15. Glossary
 
 | Term | Simple explanation |
 |---|---|
