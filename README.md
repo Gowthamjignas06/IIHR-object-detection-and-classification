@@ -67,6 +67,18 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+macOS / Linux:
+
+```bash
+git clone -b 4-class-classifier https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
+cd IIHR-object-detection-and-classification
+python3 -m venv .venv          # macOS without 3.10+: brew install python@3.12, then python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+`requirements-lock.txt` pins the exact versions verified on macOS arm64 (CPU, Python 3.12).
+
 Install PyTorch with CUDA if you have an NVIDIA GPU ([pytorch.org](https://pytorch.org)):
 
 ```powershell
@@ -75,7 +87,7 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 
 ### 2. Model weights
 
-Place the three trained checkpoint files under `checkpoints/`:
+The three trained checkpoints are tracked in git under `checkpoints/` (use other weights with `--router-checkpoint`, `--leaf-checkpoint`, `--fruit-checkpoint`):
 
 | File | Architecture | Role |
 |---|---|---|
@@ -94,8 +106,10 @@ python src/app.py
 This opens a browser window at `http://127.0.0.1:7860`. Drag-and-drop or upload any tomato image and click **Classify**.
 
 Every run automatically saves:
-- An **annotated result image** (`results/inference_results/YYYYMMDD_HHMMSS_<class>.jpg`)
-- A **JSON log entry** appended to `results/inference_results/inference_log.json`
+- An **annotated result image** (`results/inference_results/YYYYMMDD_HHMMSS_<class>_result.jpg`)
+- A **JSON log entry** appended to `results/inference_results/app_log.json` (outputs are gitignored)
+
+Below the result, a **Disease guide** explains the condition and gives a treatment plan and action steps (see [Disease guide](#disease-guide-explanation-treatment-plan-action-steps)).
 
 ### 4. Run inference from the command line
 
@@ -198,9 +212,26 @@ Domain: fruit  (router confidence: 0.9963)
     "router": "router_v1_mobilenet_v3_small",
     "leaf": "leaf_v1_efficientnet_b0",
     "fruit": "fruit_v1_yolov8n"
-  }
+  },
+  "severity_pct": 4.42,
+  "warnings": [],
+  "other_conditions": [],
+  "advice": {"condition": "Early blight (leaf)", "urgency": "low", "...": "..."}
 }
 ```
+
+The first eight keys are the original format and keep their values. Added keys:
+
+| Key | Meaning |
+|---|---|
+| `severity_pct` | Affected area % (leaf colour segmentation / fruit box geometry, same as `main`) |
+| `warnings` | `no_fruit_detected` — YOLO found nothing (output still says `Healthy plant` 1.0); `other_condition_detected` — the fruit shows only non-target conditions (e.g. Catfaced) but the four-class fallback says `Healthy plant`; `other_leaf_condition_detected` — the 10-class leaf model's top class is neither Early blight nor Healthy |
+| `other_conditions` | `[{class, confidence}]` behind those warnings |
+| `advice` | Disease guide for what was actually seen (below) |
+
+## Disease guide: explanation, treatment plan, action steps
+
+The `advice` key (and the **Disease guide** section in the app) gives `explanation`, `cause`, `symptoms`, `why_it_matters`, an `urgency` level that scales with `severity_pct` (always high for viruses and late blight; capped at moderate for non-infectious disorders), a `treatment_plan` (cultural / organic / chemical by active ingredient) and `action_steps` (now / this week / prevention), plus an IIHR/KVK referral and a disclaimer. When `other_conditions` is set, the guide covers that condition instead of the four-class fallback. Content: [`knowledge/disease_advice.yaml`](knowledge/disease_advice.yaml) (shared with `main`; draft, not yet reviewed by an agronomist). Use `--no-advice` to omit it.
 
 ---
 
@@ -298,9 +329,10 @@ Test mAP@0.5 substantially exceeds validation (YOLO detects healthy tomatoes mor
 
 ## Practical notes
 
-- **Image format:** JPEG, PNG. Convert HEIC before running.
+- **Image format:** JPEG, PNG. Convert HEIC before running. EXIF orientation is applied automatically.
 - **Framing:** Crop so the leaf or fruit fills most of the frame for best routing.
 - **Multiple fruit defects:** YOLO may detect several boxes in one image. Only the Blossom_End_Rot and Healthy plant boxes influence the four-class output; any other detections are informational only (visible in `detections` field).
+- **Tests:** `python -m pytest tests/` (four-class and unified JSON contracts, knowledge base coverage).
 - **GPU:** Inference runs on CPU by default. Pass `--device cuda` or set `device="cuda"` for faster batch processing.
 
 ---
@@ -311,7 +343,7 @@ Test mAP@0.5 substantially exceeds validation (YOLO detects healthy tomatoes mor
 |---|---|
 | Early blight | 3 / 150 test images misclassified (Late blight or Septoria visual similarity). |
 | Healthy plant | Recall = 0.62 on test — YOLO occasionally misses a healthy-tomato box when the fruit occupies a small area of the frame. |
-| Out-of-scope input | If an image shows a different leaf disease (e.g. Bacterial spot), the system still outputs either "Early blight" or "Healthy leaf". It does not return an "unknown" class. |
+| Out-of-scope input | If an image shows a different leaf disease (e.g. Bacterial spot), `predicted_class` is still "Early blight" or "Healthy leaf" (and a fruit with only other defects is "Healthy plant" 1.0). The added `warnings` / `other_conditions` keys flag these cases; there is still no "unknown" class. Non-tomato photos are routed to leaf/fruit with high router confidence (see main's external validation report). |
 
 ---
 
