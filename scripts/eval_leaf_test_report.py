@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -26,7 +27,15 @@ def late_blight_fp_to_early_blight(metrics: dict) -> int:
 
 
 def main() -> int:
-    checkpoint = repo_root() / "checkpoints" / "leaf_v1_efficientnet_b0.pt"
+    parser = argparse.ArgumentParser(description="Leaf classifier held-out test evaluation.")
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=repo_root() / "checkpoints" / "leaf_v1_efficientnet_b0.pt",
+    )
+    checkpoint = parser.parse_args().checkpoint
+    if not checkpoint.is_absolute():
+        checkpoint = repo_root() / checkpoint
     results = evaluate_leaf_checkpoint(checkpoint, splits=("val", "test"))
     val_m = results["val"]
     test_m = results["test"]
