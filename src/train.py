@@ -57,6 +57,15 @@ def resolve_device(device_name: str) -> torch.device:
     return torch.device(device_name)
 
 
+def guard_checkpoint_path(path: Path, overwrite: bool) -> None:
+    """Refuse to clobber an existing checkpoint (v1 checkpoints are frozen)."""
+    if path.exists() and not overwrite:
+        raise FileExistsError(
+            f"{path} already exists. Set checkpoint.filename in the config to a new "
+            "v2 name (e.g. router_v2_mobilenet_v3_small.pt) or pass --overwrite."
+        )
+
+
 def train_one_epoch(
     model: nn.Module,
     loader,
@@ -97,7 +106,8 @@ def train_one_epoch(
     return running_loss / total, correct / total
 
 
-def train_router(config: dict, smoke_test: bool = False) -> Path:
+def train_router(config: dict, smoke_test: bool = False, overwrite: bool = False) -> Path:
+    guard_checkpoint_path(CHECKPOINTS_DIR / config["checkpoint"]["filename"], overwrite)
     set_seed(config["training"]["seed"])
     device = resolve_device(config["training"].get("device", "auto"))
     print(f"Training device: {device}")
@@ -275,7 +285,9 @@ def train_leaf(
     resume_from: Path | None = None,
     extra_phase1_epochs: int = 0,
     disable_early_stopping: bool = False,
+    overwrite: bool = False,
 ) -> Path:
+    guard_checkpoint_path(CHECKPOINTS_DIR / config["checkpoint"]["filename"], overwrite)
     set_seed(config["training"]["seed"])
     device = resolve_device(config["training"].get("device", "auto"))
     print(f"Training device: {device}")
@@ -555,6 +567,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable early stopping for leaf training.",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Allow overwriting an existing checkpoint file (off by default).",
+    )
     return parser
 
 
@@ -564,7 +581,7 @@ def main() -> int:
     config = load_config(args.config)
 
     if config.get("model") == "router":
-        train_router(config, smoke_test=args.smoke_test)
+        train_router(config, smoke_test=args.smoke_test, overwrite=args.overwrite)
     elif config.get("model") == "leaf":
         train_leaf(
             config,
@@ -573,6 +590,7 @@ def main() -> int:
             resume_from=args.resume,
             extra_phase1_epochs=args.leaf_extra_phase1_epochs,
             disable_early_stopping=args.no_early_stopping,
+            overwrite=args.overwrite,
         )
     else:
         raise ValueError(f"Unsupported model type: {config.get('model')!r}")
