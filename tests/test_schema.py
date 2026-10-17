@@ -67,6 +67,9 @@ def test_readme_fruit_example(pipeline):
         assert len(det["bbox"]) == 4
     assert isinstance(result["router_confidence"], float)
     assert result["warnings"] == []
+    advice = result["advice"]
+    assert advice["available"] and advice["condition"] == "Blossom-end rot"
+    assert advice["category"] == "physiological" and advice["urgency"] == "moderate"
 
 
 def test_leaf_branch_schema(pipeline):
