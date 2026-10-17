@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import sys
-import tempfile
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -37,12 +36,14 @@ from four_class_infer import (
     _LEAF_EARLY_BLIGHT_IDX,
     _LEAF_HEALTHY_IDX,
 )
+from advice import advice_to_markdown
 from gradcam import compute_gradcam, overlay_gradcam_on_image
 
 # ── Output directory ──────────────────────────────────────────────────────────
 _RESULTS_DIR = _ROOT / "results" / "inference_results"
 _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-_LOG_FILE = _RESULTS_DIR / "inference_log.json"
+# New runs log here (gitignored); the committed inference_log.json is a frozen v1 artifact.
+_LOG_FILE = _RESULTS_DIR / "app_log.json"
 
 # ── Colour palette ────────────────────────────────────────────────────────────
 _CLASS_COLORS: dict[str, tuple[int, int, int]] = {
@@ -63,6 +64,37 @@ _YOLO_BOX_COLOR: dict[str, tuple[int, int, int]] = {
     "Spotted_Wilt_Virus": (100, 100, 200),
 }
 _DEFAULT_COLOR = (120, 120, 120)
+_GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
+_THEME = gr.themes.Base(primary_hue="green", neutral_hue="slate")
+_CSS = """
+        .title  { font-size: 1.55em; font-weight: 700; margin-bottom: 3px; }
+        .sub    { color: #999; margin-bottom: 16px; font-size: 0.95em; }
+        """
+
+
+def _font(size: int) -> ImageFont.ImageFont:
+    """Arial where available (Windows/macOS); Pillow's scalable default otherwise."""
+    for name in ("arial.ttf", "Arial.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:  # Pillow < 10.1 has no sized default font
+        return ImageFont.load_default()
+
+
+def _display_label(result: dict) -> tuple[str, float]:
+    """What to show users. JSON keeps predicted_class unchanged for compatibility,
+    but "Healthy plant 1.0" can mean "nothing found" or "a non-target condition"."""
+    warnings = result.get("warnings") or []
+    if "no_fruit_detected" in warnings:
+        return "No fruit detected", 0.0
+    others = result.get("other_conditions") or []
+    if others and ("other_condition_detected" in warnings or "other_leaf_condition_detected" in warnings):
+        return f"Other condition: {others[0]['class']}", float(others[0]["confidence"])
+    return result["predicted_class"], float(result["confidence"])
 
 # ── Singleton classifier ───────────────────────────────────────────────────────
 _clf: FourClassDiagnosticClassifier | None = None
@@ -115,16 +147,11 @@ def _draw_fruit_detections(
     img = original_image.convert("RGB").copy()
     if not detections:
         draw = ImageDraw.Draw(img)
-        draw.text((10, 10), "No detections", fill=(200, 200, 200))
+        draw.text((10, 10), "No fruit detected", fill=(230, 230, 230), font=_font(18))
         return img
 
     draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("arial.ttf", 16)
-        font_sm = ImageFont.truetype("arial.ttf", 13)
-    except OSError:
-        font = ImageFont.load_default()
-        font_sm = font
+    font_sm = _font(13)
 
     for det in detections:
         cls_name = det["class"]
@@ -173,18 +200,14 @@ def _build_score_panel(
 
     draw = ImageDraw.Draw(canvas)
     predicted = result["predicted_class"]
-    color = _CLASS_COLORS.get(predicted, _DEFAULT_COLOR)
+    headline, headline_conf = _display_label(result)
+    color = _CLASS_COLORS.get(headline, _DEFAULT_COLOR)
 
     draw.rectangle([W, 0, total_w, H], fill=(28, 28, 34))
 
-    try:
-        font_large = ImageFont.truetype("arial.ttf", 26)
-        font_med   = ImageFont.truetype("arial.ttf", 17)
-        font_small = ImageFont.truetype("arial.ttf", 14)
-    except OSError:
-        font_large = ImageFont.load_default()
-        font_med   = font_large
-        font_small = font_large
+    font_large = _font(26)
+    font_med   = _font(17)
+    font_small = _font(14)
 
     px = W + 16
     py = 18
@@ -194,19 +217,19 @@ def _build_score_panel(
     draw.text((px, py), f"({extra_label})", fill=(100, 100, 110), font=font_small)
     py += 26
 
-    for line in textwrap.wrap(predicted, width=18):
+    for line in textwrap.wrap(headline, width=18):
         draw.text((px, py), line, fill=color, font=font_large)
         py += 32
     py += 4
 
-    conf_pct = int(result["confidence"] * 100)
+    conf_pct = int(headline_conf * 100)
     draw.text((px, py), f"Confidence: {conf_pct}%", fill=(210, 210, 210), font=font_med)
     py += 26
 
     bar_w = panel_w - 32
     bar_h = 16
     draw.rectangle([px, py, px + bar_w, py + bar_h], fill=(55, 55, 62))
-    draw.rectangle([px, py, px + int(bar_w * result["confidence"]), py + bar_h], fill=color)
+    draw.rectangle([px, py, px + int(bar_w * headline_conf), py + bar_h], fill=color)
     py += bar_h + 20
 
     draw.line([px, py, W + panel_w - 16, py], fill=(60, 60, 68), width=1)
@@ -222,7 +245,7 @@ def _build_score_panel(
         score = scores.get(cls, 0.0)
         c = _CLASS_COLORS.get(cls, _DEFAULT_COLOR)
         is_pred = cls == predicted
-        prefix = "▶ " if is_pred else "  "
+        prefix = "» " if is_pred else "  "
         draw.text(
             (px, py),
             f"{prefix}{cls}",
@@ -281,7 +304,7 @@ def _append_log(entry: dict) -> None:
 
 def classify_image(
     image: Image.Image,
-) -> tuple[Image.Image | None, Image.Image | None, str, str]:
+) -> tuple[Image.Image | None, Image.Image | None, str, str, str]:
     """
     Called by Gradio on every image upload / classify click.
 
@@ -291,21 +314,16 @@ def classify_image(
     result_panel_img   : original + dark score panel
     md                 : markdown score table
     saved_msg          : path of saved result file
+    advice_md          : disease explanation, treatment plan and action steps
     """
     if image is None:
-        return None, None, "No image provided.", ""
+        return None, None, "No image provided.", "", ""
 
     rgb = image.convert("RGB")
 
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-    rgb.save(tmp_path, format="JPEG", quality=95)
-
-    try:
-        clf = _get_classifier()
-        result = clf.classify(tmp_path)
-    finally:
-        tmp_path.unlink(missing_ok=True)
+    # In-memory inference: re-encoding to a temp JPEG shifted scores vs the CLI.
+    clf = _get_classifier()
+    result = clf.classify_image(rgb)
 
     # ── Explainability image ───────────────────────────────────────────────────
     if result["domain"] == "leaf":
@@ -320,7 +338,8 @@ def classify_image(
 
     # ── Save result images ────────────────────────────────────────────────────
     ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_class = result["predicted_class"].replace(" ", "_")
+    headline, headline_conf = _display_label(result)
+    safe_class = "".join(ch if ch.isalnum() else "_" for ch in headline).strip("_")
     panel_path = _RESULTS_DIR / f"{ts_str}_{safe_class}_result.jpg"
     explain_path = _RESULTS_DIR / f"{ts_str}_{safe_class}_explain.jpg"
     panel_img.save(panel_path, format="JPEG", quality=95)
@@ -343,10 +362,18 @@ def classify_image(
         marker = " ◀" if cls == result["predicted_class"] else ""
         rows.append(f"| {cls} | {score:.4f} | `{bar:<20}` |{marker}")
 
+    status = ""
+    if headline != result["predicted_class"]:
+        status = (
+            f"_Four-class output (unchanged for compatibility): **{result['predicted_class']}** "
+            f"{result['confidence']:.2f}. Warnings: {', '.join(result.get('warnings') or [])}._"
+        )
     md = "\n".join([
-        f"### {result['predicted_class']}  —  {result['confidence'] * 100:.1f}% confident",
+        f"### {headline}  —  {headline_conf * 100:.1f}% confident",
         f"Domain: **{result['domain']}**  |  "
-        f"Router confidence: **{result['router_confidence']:.4f}**",
+        f"Router confidence: **{result['router_confidence']:.4f}**  |  "
+        f"Severity: **{result.get('severity_pct', 0.0):.1f}%**",
+        status,
         "",
         "| Class | Score | Bar |",
         "|---|---:|---|",
@@ -357,23 +384,19 @@ def classify_image(
         f"Saved:\n"
         f"  Result panel  → {panel_path.name}\n"
         f"  {extra_label.title()} → {explain_path.name}\n"
-        f"  Log → inference_log.json"
+        f"  Log → {_LOG_FILE.name}"
     )
 
-    return explain_img, panel_img, md, saved_msg
+    advice_md = advice_to_markdown(result.get("advice") or {})
+    return explain_img, panel_img, md, saved_msg, advice_md
 
 
 # ── Gradio UI ─────────────────────────────────────────────────────────────────
 
 def build_ui() -> gr.Blocks:
-    with gr.Blocks(
-        title="Four-Class Tomato Diagnostic",
-        theme=gr.themes.Base(primary_hue="green", neutral_hue="slate"),
-        css="""
-        .title  { font-size: 1.55em; font-weight: 700; margin-bottom: 3px; }
-        .sub    { color: #999; margin-bottom: 16px; font-size: 0.95em; }
-        """,
-    ) as demo:
+    # Gradio 6 moved theme/css from Blocks() to launch(); older versions need them here.
+    style_kwargs = {} if _GRADIO_6 else {"theme": _THEME, "css": _CSS}
+    with gr.Blocks(title="Four-Class Tomato Diagnostic", **style_kwargs) as demo:
 
         gr.HTML("""
             <div class="title">Four-Class Tomato Diagnostic</div>
@@ -425,6 +448,8 @@ def build_ui() -> gr.Blocks:
         with gr.Row():
             out_scores = gr.Markdown()
         with gr.Row():
+            out_advice = gr.Markdown(label="Disease guide")
+        with gr.Row():
             out_saved = gr.Textbox(
                 label="Saved files",
                 interactive=False,
@@ -432,14 +457,14 @@ def build_ui() -> gr.Blocks:
             )
 
         # ── Wire buttons ───────────────────────────────────────────────────────
-        outputs = [out_explain, out_panel, out_scores, out_saved]
+        outputs = [out_explain, out_panel, out_scores, out_saved, out_advice]
+        # Button only: also binding inp.change ran every upload twice (and logged twice).
         btn.click(fn=classify_image, inputs=[inp], outputs=outputs)
-        inp.change(fn=classify_image, inputs=[inp], outputs=outputs)
 
         gr.Markdown("""
 ---
 All results auto-saved to `results/inference_results/`  
-— result panel JPEG + explain JPEG + running `inference_log.json` per run.
+— result panel JPEG + explain JPEG + running `app_log.json` (all gitignored).
 """)
 
     return demo
@@ -447,11 +472,13 @@ All results auto-saved to `results/inference_results/`
 
 def main() -> None:
     demo = build_ui()
+    style_kwargs = {"theme": _THEME, "css": _CSS} if _GRADIO_6 else {}
     demo.launch(
         server_name="127.0.0.1",
         server_port=7860,
         share=False,
         inbrowser=True,
+        **style_kwargs,
     )
 
 
