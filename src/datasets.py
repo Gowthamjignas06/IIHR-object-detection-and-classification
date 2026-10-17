@@ -293,7 +293,7 @@ def build_router_dataloader(
         sampler = build_equal_domain_sampler(dataset)
         shuffle = False
     elif shuffle is None:
-        shuffle = not train_mode
+        shuffle = train_mode
 
     return DataLoader(
         dataset,
