@@ -48,13 +48,36 @@ def _union_box_area(boxes: list[tuple[float, float, float, float]]) -> float:
     return max((x2 - x1) * (y2 - y1), 1.0)
 
 
+def _covered_area(boxes: list[tuple[float, float, float, float]]) -> float:
+    """Exact area covered by the union of boxes (overlaps counted once)."""
+    xs = sorted({x for box in boxes for x in (box[0], box[2])})
+    total = 0.0
+    for left, right in zip(xs, xs[1:]):
+        spans = sorted(
+            (y1, y2) for x1, y1, x2, y2 in boxes if x1 <= left and x2 >= right and y2 > y1
+        )
+        covered = 0.0
+        cur_start, cur_end = None, None
+        for y1, y2 in spans:
+            if cur_end is None or y1 > cur_end:
+                if cur_end is not None:
+                    covered += cur_end - cur_start
+                cur_start, cur_end = y1, y2
+            else:
+                cur_end = max(cur_end, y2)
+        if cur_end is not None:
+            covered += cur_end - cur_start
+        total += covered * (right - left)
+    return total
+
+
 def fruit_severity_pct(
     detections: list[FruitDetection],
     image_size: tuple[int, int],
     *,
     healthy_class: str = "Healthy_Tomato",
 ) -> float:
-    """Severity = sum(disease box areas) / estimated fruit area in the image."""
+    """Severity = area covered by disease boxes / estimated fruit area in the image."""
     width, height = image_size
     image_area = float(width * height)
     if not detections or image_area <= 0:
@@ -75,13 +98,13 @@ def fruit_severity_pct(
     ]
     all_boxes = [det.bbox_xyxy for det in detections]
 
-    disease_area = sum(
-        max(0.0, x2 - x1) * max(0.0, y2 - y1) for x1, y1, x2, y2 in disease_boxes
-    )
+    # Union, not sum: overlapping disease boxes must not be double-counted.
+    disease_area = _covered_area(disease_boxes)
 
     if healthy_boxes:
-        # Healthy detections localize the fruit body.
-        estimated_fruit_area = _union_box_area(healthy_boxes)
+        # Healthy detections localize the fruit body; disease boxes are fruit too,
+        # so include them (otherwise severity can exceed 100% and get capped).
+        estimated_fruit_area = max(_covered_area(healthy_boxes + disease_boxes), 1.0)
     elif len(all_boxes) > 1:
         # Multiple boxes: union of all detections approximates fruit extent.
         estimated_fruit_area = _union_box_area(all_boxes)
