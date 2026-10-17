@@ -60,3 +60,7 @@ data/external_validation/
 
 # pytest
 .pytest_cache/
+
+# External validation run outputs (the report JSON/MD is tracked; images are not)
+results/external_validation/overlays/
+results/external_validation/gradcam/
