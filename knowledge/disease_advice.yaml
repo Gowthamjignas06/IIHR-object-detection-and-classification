@@ -1,0 +1,749 @@
+# Disease explanation, treatment plan and action steps for every class the
+# models can output (keys = exact model class names).
+#
+# Content is general decision-support compiled from standard tomato extension
+# guidance. It is NOT a substitute for a plant-protection expert. Chemical
+# options are listed by active ingredient only; growers must use products that
+# are registered for tomato locally (in India: CIB&RC registration) and follow
+# the label dose, pre-harvest interval (PHI) and safety instructions.
+#
+# Fields per entry:
+#   display_name, category (fungal | oomycete | bacterial | viral | pest |
+#   physiological | healthy), contagious, min_urgency / max_urgency
+#   (none | low | moderate | high), explanation, cause, symptoms, why_it_matters,
+#   treatment {cultural, organic, chemical}, action_steps {immediate, this_week,
+#   prevention}
+# Review status: draft v1.0 — have an agronomist (IIHR / KVK) review before
+# relying on it in the field.
+
+version: "1.0"
+reviewed: false
+
+get_help: >-
+  Confirm the diagnosis with a local expert before spraying: ICAR-IIHR
+  (Bengaluru) plant pathology / entomology divisions, your nearest Krishi Vigyan
+  Kendra (KVK), or the state horticulture / agriculture department. Take a fresh
+  sample (affected leaves or fruit in a paper bag) or clear photos.
+
+disclaimer: >-
+  Decision support only. The diagnosis comes from an AI model that can be wrong
+  (check the confidence score), and this guidance is general. Use only
+  pesticides registered for tomato in your area, follow the label dose,
+  pre-harvest interval and protective equipment instructions, and rotate
+  fungicide/insecticide groups to slow resistance.
+
+urgency_tiers:
+  # severity_pct thresholds (upper bounds) for diseased classes
+  low: 5.0
+  moderate: 25.0
+
+conditions:
+
+  # ───────────────────────────── LEAF CLASSES ─────────────────────────────
+
+  Bacterial spot:
+    display_name: Bacterial spot (leaf)
+    category: bacterial
+    contagious: true
+    min_urgency: moderate
+    max_urgency: high
+    explanation: >-
+      A bacterial disease that causes many small dark spots on leaves (and
+      sometimes scabby spots on fruit). It spreads quickly in warm, wet weather
+      through rain splash, overhead irrigation and handling wet plants.
+    cause: Xanthomonas spp. (X. euvesicatoria, X. vesicatoria, X. perforans, X. gardneri); seed-borne and survives on crop debris.
+    symptoms:
+      - Small (1–3 mm) dark brown to black, greasy or water-soaked spots, often with a yellow halo
+      - Spots merge; leaves yellow and drop, starting low on the plant
+      - Raised, scabby brown spots on green fruit
+    why_it_matters: >-
+      Defoliation exposes fruit to sunscald and lowers yield; fruit spots make
+      the crop unmarketable. Once established in wet weather it is hard to stop.
+    treatment:
+      cultural:
+        - Remove and destroy badly spotted leaves; do not compost them
+        - Switch to drip or furrow irrigation; avoid wetting foliage
+        - Do not work among plants while they are wet
+      organic:
+        - Copper-based bactericides (e.g. copper hydroxide, copper oxychloride) as a protectant; they slow spread but do not cure infected leaves
+      chemical:
+        - Copper oxychloride or copper hydroxide, alone or tank-mixed with mancozeb (improves copper performance)
+        - Resistance to copper is common in Xanthomonas — ask your KVK what works locally
+    action_steps:
+      immediate:
+        - Isolate the area: stop overhead watering and handle these plants last
+        - Pick off and bag the worst-affected leaves
+      this_week:
+        - Start a copper-based protectant spray programme at label intervals, especially before rain
+        - Disinfect stakes, tools and hands after working in the plot
+      prevention:
+        - Use certified disease-free seed or hot-water-treated seed and healthy transplants
+        - Rotate away from tomato, chilli and capsicum for 2–3 years
+        - Remove volunteer tomatoes and solanaceous weeds; plough in crop debris after harvest
+
+  Early blight:
+    display_name: Early blight (leaf)
+    category: fungal
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      A common fungal disease that starts on older, lower leaves as brown spots
+      with concentric "target" rings. It thrives in warm, humid weather and on
+      stressed or poorly fed plants.
+    cause: Alternaria solani (also A. linariae); survives in soil and crop debris and spreads by wind and rain splash.
+    symptoms:
+      - Brown spots with concentric rings (target pattern), usually with a yellow halo
+      - Lower leaves affected first, then yellow and drop
+      - Dark sunken lesions on stems ("collar rot" on seedlings) and at the fruit stem end
+    why_it_matters: >-
+      Progressive defoliation reduces yield and fruit size and exposes fruit to
+      sunscald. Untreated, it can strip the lower half of the plant.
+    treatment:
+      cultural:
+        - Remove infected lower leaves (up to about 30 cm from the soil) and destroy them
+        - Mulch the soil surface to stop spores splashing onto leaves
+        - Keep plants well fed (balanced N and K) — weak plants are more susceptible
+      organic:
+        - Copper-based fungicides as a protectant
+        - Bacillus subtilis or Trichoderma-based biofungicides as part of a preventive programme
+      chemical:
+        - Protectants such as mancozeb or chlorothalonil
+        - Systemic options such as azoxystrobin or difenoconazole — alternate groups, do not repeat the same one back-to-back
+    action_steps:
+      immediate:
+        - Remove and destroy spotted lower leaves
+        - Stop overhead irrigation; water at the base in the morning
+      this_week:
+        - Begin a protectant fungicide programme at label intervals (shorter intervals in wet weather)
+        - Check plants every 3–4 days for new lesions higher up
+      prevention:
+        - Rotate with non-solanaceous crops for at least 2–3 years
+        - Stake and space plants for airflow; remove crop debris after harvest
+        - Choose tolerant varieties (e.g. IIHR's Arka Rakshak / Arka Samrat hybrids are reported to carry early-blight tolerance — confirm locally)
+
+  Healthy:
+    display_name: Healthy leaf
+    category: healthy
+    contagious: false
+    min_urgency: none
+    max_urgency: none
+    explanation: >-
+      No disease pattern was recognised on this leaf. Keep monitoring — many
+      diseases are easiest to control when caught early.
+    cause: Not applicable.
+    symptoms:
+      - Uniform green colour without spots, mosaic, curling or webbing
+    why_it_matters: >-
+      Healthy foliage drives yield. Regular scouting lets you act before a
+      problem spreads.
+    treatment:
+      cultural:
+        - No treatment needed
+      organic: []
+      chemical: []
+    action_steps:
+      immediate:
+        - No action needed
+      this_week:
+        - Scout the crop once or twice a week, checking the undersides of leaves and lower leaves first
+      prevention:
+        - Water at the base, keep good spacing and airflow, and remove weeds
+        - Keep a balanced fertiliser programme and rotate crops each season
+
+  Late blight:
+    display_name: Late blight (leaf)
+    category: oomycete
+    contagious: true
+    min_urgency: high
+    max_urgency: high
+    explanation: >-
+      A very destructive water-mould disease that causes large, dark,
+      water-soaked patches on leaves and stems. In cool, humid or rainy weather
+      it can destroy a field within days and spreads to neighbouring farms.
+    cause: Phytophthora infestans; airborne spores, favoured by cool nights (about 10–20 °C), high humidity and leaf wetness.
+    symptoms:
+      - Large, irregular, greasy grey-green to dark brown patches, often starting at leaf edges or tips
+      - White fuzzy growth on the underside of lesions in humid conditions
+      - Dark brown lesions on stems and petioles; firm, greasy brown patches on fruit
+    why_it_matters: >-
+      Late blight can cause total crop loss and infect potato and tomato crops
+      nearby. It needs immediate action.
+    treatment:
+      cultural:
+        - Remove and destroy infected plants or plant parts immediately — bag them, do not compost or leave them in the field
+        - Avoid overhead irrigation; improve airflow
+      organic:
+        - Copper-based fungicides as a protectant on healthy plants (limited effect once infection is established)
+      chemical:
+        - Systemic/translaminar fungicides such as metalaxyl-M + mancozeb, cymoxanil + mancozeb, or dimethomorph (rotate groups; metalaxyl resistance occurs)
+        - Protectants such as mancozeb or chlorothalonil on the rest of the crop
+    action_steps:
+      immediate:
+        - Remove and destroy infected plants today
+        - Protect the remaining crop with a recommended fungicide before the next rain or humid night
+        - Alert neighbouring tomato and potato growers
+      this_week:
+        - Inspect every plant every 2–3 days; repeat sprays at label intervals while the weather stays cool and wet
+        - Contact your KVK / IIHR for the locally effective fungicide programme
+      prevention:
+        - Use healthy transplants; never plant next to infected potato fields or cull piles
+        - Stake, prune and space for airflow; use drip irrigation
+        - Start protectant sprays when cool, wet weather is forecast
+
+  Leaf Mold:
+    display_name: Leaf mould
+    category: fungal
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      A fungal disease of humid conditions, especially in greenhouses, polyhouses
+      and dense plantings. Pale spots on the upper leaf surface match olive-green
+      to brown velvety mould underneath.
+    cause: Passalora fulva (syn. Fulvia fulva, Cladosporium fulvum); favoured by relative humidity above about 85% and poor ventilation.
+    symptoms:
+      - Pale green to yellow spots on the upper leaf surface
+      - Olive-green to grey-brown velvety mould on the matching underside
+      - Leaves wither and drop, starting with older leaves
+    why_it_matters: >-
+      Heavy infections reduce photosynthesis and yield. It spreads fast in
+      enclosed, humid structures.
+    treatment:
+      cultural:
+        - Lower humidity — ventilate, increase plant spacing, prune lower leaves and suckers
+        - Water at the base in the morning so foliage dries quickly
+        - Remove and destroy infected leaves
+      organic:
+        - Copper-based fungicides as a protectant
+      chemical:
+        - Chlorothalonil or mancozeb as protectants
+        - Difenoconazole or azoxystrobin where registered
+    action_steps:
+      immediate:
+        - Increase ventilation and stop wetting the foliage
+        - Remove the worst-affected leaves
+      this_week:
+        - Apply a recommended fungicide to the whole block at label intervals
+        - Keep relative humidity below about 85% (vents, fans, wider spacing)
+      prevention:
+        - Grow resistant varieties (Cf resistance genes) in protected cultivation
+        - Clean and disinfect the structure between crops; remove all crop debris
+
+  Septoria leaf spot:
+    display_name: Septoria leaf spot
+    category: fungal
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      A fungal disease that produces many small round spots with grey-white
+      centres and dark borders on lower leaves. It spreads upward by rain splash
+      in warm, wet weather.
+    cause: Septoria lycopersici; survives on crop debris and solanaceous weeds.
+    symptoms:
+      - Numerous small (2–5 mm) round spots with grey or tan centres and dark brown margins
+      - Tiny black dots (fruiting bodies) in the centre of the spots
+      - Lower leaves yellow and drop; fruit is rarely affected
+    why_it_matters: >-
+      Severe defoliation weakens plants, reduces fruit size and exposes fruit to
+      sunscald.
+    treatment:
+      cultural:
+        - Remove and destroy spotted lower leaves
+        - Mulch to stop soil splash; water at the base
+        - Remove solanaceous weeds (e.g. nightshade) near the crop
+      organic:
+        - Copper-based fungicides as a protectant
+      chemical:
+        - Chlorothalonil or mancozeb as protectants
+        - Azoxystrobin or difenoconazole where registered (rotate groups)
+    action_steps:
+      immediate:
+        - Pick off and destroy spotted leaves
+        - Stop overhead watering
+      this_week:
+        - Start a protectant spray programme at label intervals during wet weather
+      prevention:
+        - Rotate away from tomato for at least 1–2 years and plough in or remove debris after harvest
+        - Stake plants and keep good spacing for airflow
+
+  Spider mites (Two-spotted):
+    display_name: Two-spotted spider mite
+    category: pest
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      Not a disease but a pest: tiny mites that feed on the underside of leaves,
+      causing fine yellow speckling and, in heavy infestations, fine webbing.
+      Outbreaks are worst in hot, dry, dusty conditions.
+    cause: Tetranychus urticae (two-spotted spider mite); populations explode in hot, dry weather and after broad-spectrum insecticides kill their natural enemies.
+    symptoms:
+      - Fine pale yellow or white stippling on leaves; leaves turn bronze and dry
+      - Tiny moving dots and fine webbing on the leaf underside
+      - Severe infestations cause leaf drop
+    why_it_matters: >-
+      Mites multiply very fast in heat and can defoliate plants within weeks,
+      cutting yield and fruit quality.
+    treatment:
+      cultural:
+        - Spray the leaf undersides with a strong jet of water to knock mites off
+        - Remove heavily infested leaves; reduce dust and water stress
+        - Avoid broad-spectrum insecticides that kill predatory mites
+      organic:
+        - Neem oil (azadirachtin) or insecticidal soap, covering the leaf underside thoroughly
+        - Wettable sulphur where registered (avoid in hot weather above about 32 °C — leaf burn)
+        - Release predatory mites (e.g. Phytoseiulus persimilis) in protected cultivation
+      chemical:
+        - Miticides (acaricides) such as abamectin, fenpyroximate, spiromesifen or propargite where registered — rotate modes of action, mites develop resistance fast
+    action_steps:
+      immediate:
+        - Confirm with a hand lens on the leaf underside (mites, eggs, webbing)
+        - Wash infested plants with a water spray and remove the worst leaves
+      this_week:
+        - Apply neem oil, soap or a registered miticide to leaf undersides; repeat after 5–7 days
+        - Irrigate adequately — water-stressed plants suffer more
+      prevention:
+        - Scout weekly in hot, dry spells, especially near dusty roads and field edges
+        - Control weeds that host mites; conserve natural enemies
+
+  Target Spot:
+    display_name: Target spot (leaf)
+    category: fungal
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      A fungal disease causing brown spots with light-coloured centres and
+      faint rings on leaves, stems and fruit. It favours warm, humid weather and
+      dense canopies.
+    cause: Corynespora cassiicola; survives on crop debris and many other host plants.
+    symptoms:
+      - Small water-soaked spots that grow into brown lesions with light centres and concentric rings
+      - Lesions can merge and cause leaf yellowing and drop
+      - Small sunken spots with cracked centres on fruit
+    why_it_matters: >-
+      Defoliation and fruit lesions reduce yield and marketability. It is easily
+      confused with early blight — expert confirmation helps choose the right fungicide.
+    treatment:
+      cultural:
+        - Prune lower leaves and thin the canopy to improve airflow
+        - Remove and destroy infected leaves and plant debris
+        - Avoid overhead irrigation
+      organic:
+        - Copper-based fungicides as a protectant
+      chemical:
+        - Chlorothalonil or mancozeb as protectants
+        - Azoxystrobin or difenoconazole where registered (rotate groups)
+    action_steps:
+      immediate:
+        - Remove infected leaves and open up the canopy
+      this_week:
+        - Start a protectant fungicide programme at label intervals
+      prevention:
+        - Rotate crops and remove debris after harvest
+        - Keep plants staked and well spaced
+
+  Tomato Yellow Leaf Curl Virus:
+    display_name: Tomato yellow leaf curl / leaf curl virus
+    category: viral
+    contagious: true
+    min_urgency: high
+    max_urgency: high
+    explanation: >-
+      A viral disease spread by whiteflies. Infected plants have small, curled,
+      yellow-edged leaves and become stunted with very poor fruit set. In India
+      this symptom is caused by the tomato leaf curl virus complex (begomoviruses
+      closely related to TYLCV). There is no cure for an infected plant.
+    cause: Begomoviruses (TYLCV / tomato leaf curl viruses) transmitted by the whitefly Bemisia tabaci; not spread by seed or touch.
+    symptoms:
+      - Upward or inward curling and cupping of leaves, with yellow leaf margins
+      - Small, crinkled leaves and shortened internodes (bushy, stunted plants)
+      - Flower drop and very few fruit if infected young
+    why_it_matters: >-
+      Plants infected early produce little or no marketable fruit, and every
+      infected plant is a virus source for whiteflies to spread further.
+    treatment:
+      cultural:
+        - Pull out and destroy infected plants (bag them first so whiteflies do not fly off) — they cannot be cured
+        - Remove weeds that host whiteflies and the virus
+      organic:
+        - Yellow sticky traps to monitor and reduce whiteflies
+        - Neem oil / azadirachtin sprays against whitefly nymphs
+      chemical:
+        - Whitefly control with insecticides registered for tomato (e.g. spiromesifen, cyantraniliprole, flonicamid, or a neonicotinoid such as imidacloprid/thiamethoxam) — rotate groups; whiteflies become resistant quickly
+        - Insecticides do not cure infected plants; they only slow spread
+    action_steps:
+      immediate:
+        - Remove and destroy plants showing leaf curl, especially young ones
+        - Put up yellow sticky traps to check whitefly numbers
+      this_week:
+        - Control whiteflies across the field and border weeds
+        - Inspect neighbouring plants every few days; remove new cases quickly
+      prevention:
+        - Raise seedlings under insect-proof net (40–50 mesh) and transplant virus-free seedlings
+        - Grow leaf-curl-resistant varieties (e.g. IIHR's Arka Rakshak, Arka Samrat, Arka Ananya — confirm suitability with IIHR/KVK)
+        - Use barrier crops (e.g. maize/sorghum rows), reflective mulch, and avoid overlapping tomato crops
+
+  Tomato mosaic virus:
+    display_name: Tomato mosaic virus
+    category: viral
+    contagious: true
+    min_urgency: high
+    max_urgency: high
+    explanation: >-
+      A very stable virus that causes light- and dark-green mosaic patterns and
+      distorted leaves. It spreads by touch — hands, tools, clothing — and on
+      seed, and can survive for a long time in plant debris. There is no cure.
+    cause: Tomato mosaic virus (ToMV, Tobamovirus); mechanically transmitted and seed-borne (related tobacco mosaic virus can also be carried on tobacco products).
+    symptoms:
+      - Light and dark green mottling or mosaic on leaves
+      - Fern-like, narrow or distorted leaves; stunted plants
+      - Uneven ripening or internal browning of fruit
+    why_it_matters: >-
+      It reduces yield and fruit quality and spreads easily through routine work
+      like pruning and tying.
+    treatment:
+      cultural:
+        - Remove and destroy infected plants; work on infected plants last
+        - Disinfect tools and hands (soap and water; tools in 10% household bleach or skim-milk dip)
+        - Do not smoke or use tobacco while handling plants; wash hands first
+      organic: []
+      chemical:
+        - No chemical cure exists; pesticides are not effective against this virus
+    action_steps:
+      immediate:
+        - Remove infected plants and bag them
+        - Disinfect tools, stakes and hands before touching other plants
+      this_week:
+        - Inspect the rest of the crop for mosaic symptoms and remove new cases
+      prevention:
+        - Use certified, virus-free (heat- or chemically-treated) seed
+        - Grow resistant varieties (Tm-2² resistance) where available
+        - Clean structures and remove all debris between crops
+
+  # ───────────────────────────── FRUIT CLASSES ────────────────────────────
+
+  Anthracnose:
+    display_name: Anthracnose (fruit rot)
+    category: fungal
+    contagious: true
+    min_urgency: low
+    max_urgency: high
+    explanation: >-
+      A fungal fruit rot that shows up on ripe or ripening fruit as small,
+      sunken, water-soaked circles that enlarge and darken, often with dark
+      rings of spores. Infection usually happens earlier on green fruit and
+      appears as the fruit ripens.
+    cause: Colletotrichum spp. (e.g. C. coccodes); survives in soil and debris and spreads by rain splash; favoured by warm, wet weather.
+    symptoms:
+      - Small circular sunken spots on ripe fruit that enlarge to 1–2 cm
+      - Dark centres with concentric rings; pink/salmon spore masses in wet weather
+      - Soft rot follows as secondary organisms invade
+    why_it_matters: >-
+      Fruit becomes unmarketable, and losses continue after harvest if infected
+      fruit is stored with healthy fruit.
+    treatment:
+      cultural:
+        - Pick ripe fruit promptly; remove and destroy rotting fruit from plants and the ground
+        - Mulch and stake so fruit does not touch the soil
+        - Avoid overhead irrigation
+      organic:
+        - Copper-based fungicides as a protectant from fruit set
+      chemical:
+        - Protectants such as chlorothalonil or mancozeb starting at first fruit set
+        - Azoxystrobin where registered (rotate groups; respect pre-harvest intervals)
+    action_steps:
+      immediate:
+        - Remove all spotted and rotting fruit; do not leave it in the field
+        - Separate affected fruit from the harvest; do not store with sound fruit
+      this_week:
+        - Harvest ripe fruit more frequently
+        - Start or tighten protectant sprays on developing fruit (check PHI before harvest)
+      prevention:
+        - Rotate with non-solanaceous crops for 2–3 years
+        - Control early blight and other foliar diseases (they weaken plants)
+        - Keep fruit off the soil with staking and mulch
+
+  Blossom_End_Rot:
+    display_name: Blossom-end rot
+    category: physiological
+    contagious: false
+    min_urgency: low
+    max_urgency: moderate
+    explanation: >-
+      Not an infectious disease: a calcium-related disorder. A dark, sunken,
+      leathery patch forms at the blossom end (bottom) of the fruit because not
+      enough calcium reaches the developing fruit — usually due to irregular
+      watering rather than a lack of calcium in the soil.
+    cause: Localised calcium deficiency in the fruit, caused by uneven soil moisture, drought stress, root damage, high salinity, or excess nitrogen / ammonium fertiliser.
+    symptoms:
+      - Water-soaked spot at the blossom end that turns into a dark brown to black, sunken, leathery patch
+      - Often on the first fruit of the season and in hot, dry spells
+      - Secondary moulds may grow on the patch
+    why_it_matters: >-
+      Affected fruit is unmarketable, but the disorder does not spread from plant
+      to plant. Fixing watering protects the fruit that forms next.
+    treatment:
+      cultural:
+        - Water deeply and regularly to keep soil evenly moist (drip irrigation is ideal); avoid cycles of drought and flooding
+        - Mulch to hold soil moisture
+        - Avoid excess nitrogen, especially ammonium-based fertilisers; avoid deep cultivation that damages roots
+      organic:
+        - If a soil test shows low calcium or acid soil, apply agricultural lime (acid soil) or gypsum before the next crop
+      chemical:
+        - Foliar calcium sprays (e.g. calcium chloride or calcium nitrate) have limited effect because little calcium moves from leaves to fruit — fixing irrigation matters more
+        - No fungicide is needed — this is not an infection
+    action_steps:
+      immediate:
+        - Remove affected fruit (it will not recover) so the plant puts energy into healthy fruit
+        - Check soil moisture and set a regular watering schedule
+      this_week:
+        - Mulch around plants and keep moisture even, especially during fruit set and hot weather
+        - Review fertiliser: reduce high-nitrogen / ammonium feeding
+      prevention:
+        - Do a soil test (pH and calcium) before planting and correct with lime or gypsum if needed
+        - Use drip irrigation and mulch; choose less susceptible varieties
+
+  Catfaced:
+    display_name: Catfacing (fruit deformity)
+    category: physiological
+    contagious: false
+    min_urgency: low
+    max_urgency: moderate
+    explanation: >-
+      Not an infectious disease: a deformity in which fruit develop puckered
+      scars, ridges and cavities at the blossom end. It starts at flowering, when
+      the flower is damaged or develops abnormally.
+    cause: Cool temperatures (roughly below 13 °C) during flowering, hormone-type herbicide (e.g. 2,4-D) drift, thrips feeding or other flower damage; large-fruited varieties are most prone.
+    symptoms:
+      - Puckered, scarred, misshapen fruit with corky brown scar tissue at the blossom end
+      - Deep cavities or "zippering" lines on the fruit surface
+    why_it_matters: >-
+      Fruit is downgraded or unmarketable but usually safe to eat once the
+      scarred part is cut away. It does not spread between plants.
+    treatment:
+      cultural:
+        - Nothing can fix fruit that is already deformed — harvest and use or sell as a lower grade
+        - Protect flowering plants from cold (adjust planting date, use row covers in cold spells)
+        - Avoid spraying hormone-type herbicides near tomatoes
+      organic:
+        - Manage thrips if they are present on flowers (blue sticky traps, neem)
+      chemical:
+        - No fungicide or bactericide is needed — this is not an infection
+    action_steps:
+      immediate:
+        - Grade out deformed fruit; check for cracks where rots could enter
+      this_week:
+        - Check flowers for thrips and note night temperatures during flowering
+      prevention:
+        - Plant so flowering avoids cold periods; choose less susceptible varieties
+        - Avoid herbicide drift; keep pruning moderate
+
+  Fruit_Cracking:
+    display_name: Fruit cracking
+    category: physiological
+    contagious: false
+    min_urgency: low
+    max_urgency: moderate
+    explanation: >-
+      Not an infectious disease: the fruit skin splits in radial (from the stem)
+      or concentric (around the stem) cracks when the fruit takes up water faster
+      than the skin can stretch — typically after heavy rain or watering
+      following a dry spell, or in hot weather.
+    cause: Irregular water supply (dry spell followed by heavy rain/irrigation), high temperatures and direct sun on fruit, and susceptible varieties.
+    symptoms:
+      - Radial cracks running out from the stem end, or circular cracks around the shoulder
+      - Cracks may heal as corky tissue or become entry points for moulds and rots
+    why_it_matters: >-
+      Cracked fruit has short shelf life and is often downgraded. Open cracks let
+      fruit-rotting fungi and bacteria in. It does not spread between plants.
+    treatment:
+      cultural:
+        - Keep soil moisture even with regular drip irrigation and mulch
+        - Keep good leaf cover over fruit to reduce heating by direct sun
+        - Harvest at the breaker / early colour stage before heavy rain is forecast
+      organic: []
+      chemical:
+        - No fungicide is needed for the cracking itself; manage rots only if they appear in cracks
+    action_steps:
+      immediate:
+        - Harvest cracked fruit and use or sell it quickly; discard fruit with rot in the cracks
+      this_week:
+        - Even out irrigation; avoid heavy watering after a dry period
+      prevention:
+        - Use crack-resistant varieties, mulch and steady drip irrigation
+        - Avoid heavy pruning that exposes fruit to sun
+
+  Healthy_Tomato:
+    display_name: Healthy fruit
+    category: healthy
+    contagious: false
+    min_urgency: none
+    max_urgency: none
+    explanation: >-
+      No defect or disease was detected on this fruit. Keep monitoring as the
+      crop develops and ripens.
+    cause: Not applicable.
+    symptoms:
+      - Smooth, evenly coloured skin without spots, cracks, rots or deformities
+    why_it_matters: >-
+      Regular checks help you catch fruit rots, cracking and blossom-end rot
+      early, when management changes still help the next fruit.
+    treatment:
+      cultural:
+        - No treatment needed
+      organic: []
+      chemical: []
+    action_steps:
+      immediate:
+        - No action needed
+      this_week:
+        - Keep watering regular and harvest ripe fruit promptly
+      prevention:
+        - Even irrigation, mulch, staking to keep fruit off the soil, and balanced fertiliser
+
+  Late_Blight:
+    display_name: Late blight (fruit)
+    category: oomycete
+    contagious: true
+    min_urgency: high
+    max_urgency: high
+    explanation: >-
+      The same destructive water-mould disease as late blight on leaves. On fruit
+      it forms large, firm, greasy, brown to olive patches, usually on the upper
+      side of green fruit. Leaves and stems on the same plants are almost always
+      infected too.
+    cause: Phytophthora infestans; favoured by cool nights, high humidity and rain.
+    symptoms:
+      - Firm, greasy-looking brown or olive-brown patches, often on the shoulder of green fruit
+      - Patches stay firm (not sunken) at first; white growth may appear in humid conditions
+      - Matching dark lesions on leaves and stems
+    why_it_matters: >-
+      It can destroy the whole crop within days and spreads to nearby tomato and
+      potato fields. Infected fruit rots in storage.
+    treatment:
+      cultural:
+        - Remove and destroy infected fruit and plants immediately — bag them; never compost
+        - Check leaves and stems of the same plants and treat the whole field
+      organic:
+        - Copper-based fungicides as a protectant on healthy plants
+      chemical:
+        - Metalaxyl-M + mancozeb, cymoxanil + mancozeb or dimethomorph where registered (rotate; follow PHI before harvest)
+        - Protectants such as mancozeb or chlorothalonil on the rest of the crop
+    action_steps:
+      immediate:
+        - Remove and destroy infected fruit and plants today
+        - Spray the remaining crop with a recommended fungicide before the next rain or humid night
+        - Alert neighbouring tomato and potato growers
+      this_week:
+        - Inspect the whole field every 2–3 days; repeat sprays at label intervals during cool, wet weather
+        - Do not store or sell fruit from infected plants without careful grading
+      prevention:
+        - Healthy transplants, good spacing and drip irrigation
+        - Start protectant sprays when cool, wet weather is forecast; keep away from infected potato fields
+
+  Mold:
+    display_name: Fruit mould / rot (grey or white mould)
+    category: fungal
+    contagious: true
+    min_urgency: moderate
+    max_urgency: high
+    explanation: >-
+      Fungal growth on fruit — most often grey mould (fuzzy grey spores) or
+      white mould (cottony white growth with black hard bodies). These fungi
+      enter through wounds, cracks or old flower parts and spread in cool, humid
+      conditions and in storage.
+    cause: Mainly Botrytis cinerea (grey mould) and Sclerotinia sclerotiorum (white mould); favoured by high humidity, poor airflow, wounds and dead plant tissue.
+    symptoms:
+      - Soft, water-soaked rot covered with fuzzy grey spores (grey mould) or cottony white growth (white mould)
+      - Pale "ghost spot" rings on green fruit (grey mould)
+      - Black seed-like sclerotia in or on rotted tissue (white mould)
+    why_it_matters: >-
+      Mould spreads from fruit to fruit in the field and in storage, and
+      sclerotia survive in soil for years.
+    treatment:
+      cultural:
+        - Remove and destroy mouldy fruit and dead leaves/flowers — carefully, to avoid shaking spores
+        - Improve airflow: prune lower leaves, widen spacing, ventilate protected structures
+        - Avoid wounding fruit; harvest when plants are dry; keep harvested fruit cool and dry
+      organic:
+        - Biological fungicides based on Trichoderma or Bacillus as preventives
+      chemical:
+        - Fungicides registered for grey/white mould on tomato (ask your KVK which are registered and effective locally); rotate groups — Botrytis develops resistance quickly
+    action_steps:
+      immediate:
+        - Remove all mouldy fruit from the plants and the ground; do not leave it in the field
+        - Separate harvested fruit and discard any with mould
+      this_week:
+        - Reduce humidity and leaf wetness; prune for airflow
+        - Apply a recommended fungicide if mould keeps appearing
+      prevention:
+        - Avoid dense planting and excess nitrogen; manage cracking (cracks let mould in)
+        - Rotate crops (white mould sclerotia persist in soil); sanitise structures between crops
+
+  Spotted_Wilt_Virus:
+    display_name: Tomato spotted wilt virus
+    category: viral
+    contagious: true
+    min_urgency: high
+    max_urgency: high
+    explanation: >-
+      A viral disease spread by thrips. On fruit it causes pale yellow or white
+      rings and blotches and uneven ripening; leaves may show bronzing and dark
+      spots, and young plants can wilt and die. There is no cure for an infected
+      plant.
+    cause: Tomato spotted wilt orthotospovirus (TSWV), transmitted by thrips (e.g. Frankliniella occidentalis, Thrips tabaci); many weeds and ornamentals are hosts.
+    symptoms:
+      - Pale yellow, white or red concentric rings and blotches on fruit; uneven ripening
+      - Bronzing, purple-brown flecks and dead spots on young leaves
+      - Stunting, one-sided growth and wilting of young plants
+    why_it_matters: >-
+      Infected plants yield little marketable fruit and act as a virus source for
+      thrips to spread through the crop.
+    treatment:
+      cultural:
+        - Remove and destroy infected plants (bag them first) — they cannot be cured
+        - Control weeds in and around the field that host thrips and the virus
+      organic:
+        - Blue or yellow sticky traps to monitor and reduce thrips
+        - Spinosad (where registered) or neem-based products against thrips
+      chemical:
+        - Thrips control with insecticides registered for tomato (e.g. spinetoram, fipronil, or cyantraniliprole where registered) — rotate groups; insecticides only slow spread, they do not cure plants
+    action_steps:
+      immediate:
+        - Remove and destroy plants with ring-spotted fruit or bronzed young leaves
+        - Put up blue sticky traps to check thrips numbers
+      this_week:
+        - Control thrips and border weeds; inspect neighbouring plants every few days
+      prevention:
+        - Use virus-free seedlings raised under insect-proof net
+        - Grow TSWV-resistant varieties (Sw-5 gene) where available; use reflective mulch
+        - Avoid planting near infected crops or ornamental nurseries
+
+  # ─────────────────────────── SPECIAL CASES ──────────────────────────────
+
+  _no_detection:
+    display_name: No fruit detected
+    category: unknown
+    contagious: false
+    min_urgency: none
+    max_urgency: none
+    explanation: >-
+      The fruit detector did not find any tomato fruit or defect in this photo,
+      so no diagnosis could be made.
+    cause: The photo may not show a tomato fruit, the fruit may be too small or blurry, or the lighting may be poor.
+    symptoms: []
+    why_it_matters: >-
+      Without a detection the system cannot say whether the fruit is healthy or
+      diseased.
+    treatment:
+      cultural: []
+      organic: []
+      chemical: []
+    action_steps:
+      immediate:
+        - Retake the photo with one fruit filling most of the frame, in good daylight, in focus
+      this_week: []
+      prevention: []

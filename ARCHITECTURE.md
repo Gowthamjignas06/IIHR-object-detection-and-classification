@@ -56,7 +56,7 @@ Phase 3 (deferred): sensors → fuzzy logic → actuators. Not implemented.
 ```
 
 These seven keys are the stable contract. Later versions only **add** keys
-(currently `router_confidence`, `warnings`); existing keys are never
+(currently `router_confidence`, `warnings`, `advice`); existing keys are never
 renamed, removed or given new meanings.
 
 ## 5. Repository structure

@@ -30,6 +30,7 @@ _ROOT = _SRC.parent
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from advice import advice_to_markdown
 from infer_pipeline import TomatoInferencePipeline
 
 # ── Output directories ────────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ def _append_log(entry: dict) -> None:
 
 def diagnose_image(
     image: Image.Image,
-) -> tuple[Image.Image | None, Image.Image | None, str, str]:
+) -> tuple[Image.Image | None, Image.Image | None, str, str, str]:
     """
     Called by Gradio on every image upload.
 
@@ -259,9 +260,10 @@ def diagnose_image(
     panel_img    : original + dark annotation panel
     md           : markdown result summary
     saved_msg    : saved file paths
+    advice_md    : disease explanation, treatment plan and action steps
     """
     if image is None:
-        return None, None, "No image provided.", ""
+        return None, None, "No image provided.", "", ""
 
     rgb = image.convert("RGB")
 
@@ -339,7 +341,8 @@ def diagnose_image(
         f"  Log → {_LOG_FILE.name}"
     )
 
-    return explain_img, panel_img, md, saved_msg
+    advice_md = advice_to_markdown(result.get("advice") or {})
+    return explain_img, panel_img, md, saved_msg, advice_md
 
 
 # ── Gradio UI ─────────────────────────────────────────────────────────────────
@@ -408,13 +411,15 @@ def build_ui() -> gr.Blocks:
         with gr.Row():
             out_md = gr.Markdown()
         with gr.Row():
+            out_advice = gr.Markdown(label="Disease guide")
+        with gr.Row():
             out_saved = gr.Textbox(
                 label="Saved files",
                 interactive=False,
                 lines=3,
             )
 
-        outputs = [out_explain, out_panel, out_md, out_saved]
+        outputs = [out_explain, out_panel, out_md, out_saved, out_advice]
         # Button only: also binding inp.change ran every upload twice (and logged twice).
         btn.click(fn=diagnose_image, inputs=[inp], outputs=outputs)
 

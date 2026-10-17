@@ -15,6 +15,7 @@ _SRC = Path(__file__).resolve().parent
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from advice import build_advice, load_knowledge_base
 from evaluate import load_leaf_checkpoint, load_router_checkpoint, repo_root
 from gradcam import compute_gradcam, save_gradcam_overlay
 from severity import FruitDetection, fruit_severity_pct, leaf_severity_pct
@@ -55,6 +56,8 @@ class TomatoInferencePipeline:
         router_checkpoint: Path | str | None = None,
         leaf_checkpoint: Path | str | None = None,
         fruit_checkpoint: Path | str | None = None,
+        with_advice: bool = True,
+        knowledge_base_path: Path | str | None = None,
     ) -> None:
         self.root = root or repo_root()
         self.device = resolve_device(device)
@@ -79,6 +82,9 @@ class TomatoInferencePipeline:
         self.fruit_model = YOLO(str(fruit_ckpt))
         fruit_names = self.fruit_model.names
         self.fruit_class_names: list[str] = [fruit_names[i] for i in sorted(fruit_names)]
+
+        # Explanation / treatment / action-step guidance (additive "advice" key).
+        self.knowledge_base = load_knowledge_base(knowledge_base_path) if with_advice else None
 
     def _resolve_checkpoint(self, name: str, override: Path | str | None) -> Path:
         path = Path(override) if override is not None else DEFAULT_CHECKPOINTS[name]
@@ -213,6 +219,8 @@ class TomatoInferencePipeline:
             warnings.append("no_fruit_detected")
         result["router_confidence"] = round(route_conf, 4)
         result["warnings"] = warnings
+        if self.knowledge_base is not None:
+            result["advice"] = build_advice(result, self.knowledge_base)
         return result
 
 
@@ -224,6 +232,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--router-checkpoint", type=Path, default=None)
     parser.add_argument("--leaf-checkpoint", type=Path, default=None)
     parser.add_argument("--fruit-checkpoint", type=Path, default=None)
+    parser.add_argument(
+        "--no-advice",
+        action="store_true",
+        help="Omit the disease explanation / treatment / action-step 'advice' key.",
+    )
     return parser
 
 
@@ -234,6 +247,7 @@ def main() -> int:
         router_checkpoint=args.router_checkpoint,
         leaf_checkpoint=args.leaf_checkpoint,
         fruit_checkpoint=args.fruit_checkpoint,
+        with_advice=not args.no_advice,
     )
     outputs = []
     for image_path in args.images:

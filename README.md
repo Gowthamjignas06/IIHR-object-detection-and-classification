@@ -197,6 +197,21 @@ Relative image paths are resolved against your current directory first, then the
 
 Leaf runs save a Grad-CAM overlay to `results/gradcam_overlays/<stem>_gradcam.jpg`.
 
+### Disease guide: explanation, treatment plan, action steps
+
+Every result also carries an additive `advice` key (the original seven keys are unchanged), shown as a **Disease guide** in the web app:
+
+| Field | Contents |
+|---|---|
+| `condition`, `category`, `contagious` | Plain-language name; fungal / water-mould / bacterial / virus / pest / physiological |
+| `explanation`, `cause`, `symptoms`, `why_it_matters` | What the condition is and how to recognise it |
+| `urgency`, `urgency_reason` | `none` / `low` / `moderate` / `high` — scales with `severity_pct`, always `high` for viruses and late blight, capped at `moderate` for non-infectious disorders |
+| `treatment_plan` | `cultural`, `organic`, `chemical` (active ingredients only — use locally registered products) |
+| `action_steps` | `immediate`, `this_week`, `prevention` |
+| `notes`, `get_help`, `disclaimer` | Low-confidence / secondary-detection notes, IIHR / KVK referral, safety disclaimer |
+
+Content lives in [`knowledge/disease_advice.yaml`](knowledge/disease_advice.yaml) (one entry per model class) and is marked **draft — not yet reviewed by an agronomist**. Use `--no-advice` to omit the key.
+
 ### Phone photos — practical notes
 
 - Convert **HEIC → JPEG** before running (Pillow does not open `.heic` by default).
