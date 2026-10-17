@@ -1,0 +1,984 @@
+{
+  "generated_at": "2026-10-17",
+  "purpose": "external validation only \u2014 never used for training or tuning",
+  "model_versions": {
+    "router": "router_v1_mobilenet_v3_small",
+    "leaf": "leaf_v1_efficientnet_b0",
+    "fruit": "fruit_v1_yolov8n"
+  },
+  "summary": {
+    "Article related_other pics": {
+      "expected": "out_of_scope",
+      "n_images": 29,
+      "routed": {
+        "fruit": 28,
+        "leaf": 1
+      },
+      "router_confidence_median": 0.9963,
+      "predicted_class": {
+        "No fruit detected": 17,
+        "Healthy_Tomato": 7,
+        "Mold": 4,
+        "Septoria leaf spot": 1
+      },
+      "confidence_median": 0.0,
+      "low_confidence_lt_0_5": 24,
+      "note": "These photos are not tomato close-ups; the pipeline has no 'not a tomato' output, so every one of them still receives a leaf or fruit diagnosis."
+    },
+    "fruit pics": {
+      "expected": "fruit",
+      "n_images": 33,
+      "routed": {
+        "fruit": 33
+      },
+      "router_confidence_median": 1.0,
+      "predicted_class": {
+        "Healthy_Tomato": 28,
+        "Catfaced": 2,
+        "No fruit detected": 1,
+        "Mold": 1,
+        "Spotted_Wilt_Virus": 1
+      },
+      "confidence_median": 0.8468,
+      "low_confidence_lt_0_5": 7,
+      "routed_to_fruit_pct": 100.0,
+      "no_fruit_detected": 1,
+      "detected_box_classes": {
+        "Healthy_Tomato": 80,
+        "Catfaced": 2,
+        "Blossom_End_Rot": 2,
+        "Mold": 1,
+        "Spotted_Wilt_Virus": 1
+      }
+    }
+  },
+  "images": [
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0031.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0032.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9999,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.7039,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0033.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.8891,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0034.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9999,
+      "class": "Mold",
+      "class_display": "Mold",
+      "confidence": 0.2676,
+      "severity_pct": 11.57,
+      "detection_classes": [
+        "Mold"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0035.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9979,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0036.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9997,
+      "class": "Mold",
+      "class_display": "Mold",
+      "confidence": 0.3707,
+      "severity_pct": 20.56,
+      "detection_classes": [
+        "Mold"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0037.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9984,
+      "class": "Mold",
+      "class_display": "Mold",
+      "confidence": 0.4458,
+      "severity_pct": 99.95,
+      "detection_classes": [
+        "Mold",
+        "Mold"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0042.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.4572,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0043.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9999,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.514,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0044.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.5905,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0045.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.4725,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0046.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.3476,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0047.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.995,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0049.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.8687,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0051.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9831,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0052.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9935,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0053.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9888,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0057.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9519,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0059.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.7604,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0062.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.8082,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0069.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.6425,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG-20261011-WA0102.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_152750.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9905,
+      "class": "Mold",
+      "class_display": "Mold",
+      "confidence": 0.5387,
+      "severity_pct": 80.55,
+      "detection_classes": [
+        "Mold"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_152752.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_152756.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9998,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_152856.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9963,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_152858.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9746,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_155901.jpg",
+      "domain": "leaf",
+      "router_confidence": 0.5688,
+      "class": "Septoria leaf spot",
+      "class_display": "Septoria leaf spot",
+      "confidence": 0.5322,
+      "severity_pct": 32.06,
+      "detection_classes": [],
+      "warnings": []
+    },
+    {
+      "folder": "Article related_other pics",
+      "image": "IMG_20260927_155956.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9953,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.4408,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153024.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9957,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9088,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153037.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9994,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.42,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153043.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "No fruit detected",
+      "confidence": 0.0,
+      "severity_pct": 0.0,
+      "detection_classes": [],
+      "warnings": [
+        "no_fruit_detected"
+      ]
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153059.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8199,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153102.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Mold",
+      "class_display": "Mold",
+      "confidence": 0.2771,
+      "severity_pct": 2.91,
+      "detection_classes": [
+        "Mold"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153210.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8819,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153414.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.7238,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153504.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8967,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "20260927_153507.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8381,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0014.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.4056,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0016.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9362,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0024.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.6535,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0025.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.5831,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0026.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9996,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9389,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0028.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8082,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0029.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8701,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0038.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8976,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0039.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Catfaced",
+      "class_display": "Catfaced",
+      "confidence": 0.6189,
+      "severity_pct": 7.85,
+      "detection_classes": [
+        "Catfaced"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0040.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Spotted_Wilt_Virus",
+      "class_display": "Spotted_Wilt_Virus",
+      "confidence": 0.4072,
+      "severity_pct": 7.55,
+      "detection_classes": [
+        "Spotted_Wilt_Virus"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0041.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Catfaced",
+      "class_display": "Catfaced",
+      "confidence": 0.3677,
+      "severity_pct": 24.82,
+      "detection_classes": [
+        "Catfaced"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0054.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9011,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0055.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8634,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0056.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9999,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.6535,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0060.jpg",
+      "domain": "fruit",
+      "router_confidence": 0.9995,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.4452,
+      "severity_pct": 52.58,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Blossom_End_Rot",
+        "Blossom_End_Rot"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0063.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8835,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0064.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9262,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0065.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9124,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0066.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.5932,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0067.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9184,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0070.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9096,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0072.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.8468,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0073.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9523,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    },
+    {
+      "folder": "fruit pics",
+      "image": "IMG-20261011-WA0074.jpg",
+      "domain": "fruit",
+      "router_confidence": 1.0,
+      "class": "Healthy_Tomato",
+      "class_display": "Healthy_Tomato",
+      "confidence": 0.9006,
+      "severity_pct": 0.0,
+      "detection_classes": [
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato",
+        "Healthy_Tomato"
+      ],
+      "warnings": []
+    }
+  ]
+}
