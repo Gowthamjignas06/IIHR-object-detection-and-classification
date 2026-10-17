@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import sys
-import tempfile
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -65,6 +64,33 @@ _FRUIT_COLORS: dict[str, tuple[int, int, int]] = {
 }
 
 _DEFAULT_COLOR = (120, 120, 120)
+_NO_FRUIT_LABEL = "No fruit detected"
+_GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
+_THEME = gr.themes.Base(primary_hue="green", neutral_hue="slate")
+_CSS = """
+        .title { font-size: 1.55em; font-weight: 700; margin-bottom: 3px; }
+        .sub   { color: #999; font-size: 0.95em; margin-bottom: 16px; }
+        """
+
+
+def _font(size: int) -> ImageFont.ImageFont:
+    """Arial where available (Windows/macOS); Pillow's scalable default otherwise."""
+    for name in ("arial.ttf", "Arial.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:  # Pillow < 10.1 has no sized default font
+        return ImageFont.load_default()
+
+
+def _display_class(result: dict) -> str:
+    """Label to show users; "class" stays Healthy_Tomato in JSON for compatibility."""
+    if "no_fruit_detected" in (result.get("warnings") or []):
+        return _NO_FRUIT_LABEL
+    return result["class"]
 
 # ── Singleton pipeline ────────────────────────────────────────────────────────
 _pipeline: TomatoInferencePipeline | None = None
@@ -89,16 +115,11 @@ def _draw_fruit_detections(
     img = original.convert("RGB").copy()
     if not detections:
         draw = ImageDraw.Draw(img)
-        draw.text((10, 10), "No detections", fill=(200, 200, 200))
+        draw.text((10, 10), _NO_FRUIT_LABEL, fill=(230, 230, 230), font=_font(18))
         return img
 
     draw = ImageDraw.Draw(img)
-    try:
-        font    = ImageFont.truetype("arial.ttf", 16)
-        font_sm = ImageFont.truetype("arial.ttf", 13)
-    except OSError:
-        font    = ImageFont.load_default()
-        font_sm = font
+    font_sm = _font(13)
 
     for det in detections:
         cls   = det["class"]
@@ -132,21 +153,16 @@ def _build_score_panel(
     canvas.paste(original, (0, 0))
 
     draw      = ImageDraw.Draw(canvas)
-    cls_name  = result["class"]
+    cls_name  = _display_class(result)
     confidence = result["confidence"]
     severity   = result.get("severity_pct", 0.0)
     color      = class_colors.get(cls_name, _DEFAULT_COLOR)
 
     draw.rectangle([W, 0, W + panel_w, H], fill=(28, 28, 34))
 
-    try:
-        font_lg = ImageFont.truetype("arial.ttf", 24)
-        font_md = ImageFont.truetype("arial.ttf", 17)
-        font_sm = ImageFont.truetype("arial.ttf", 14)
-    except OSError:
-        font_lg = ImageFont.load_default()
-        font_md = font_lg
-        font_sm = font_lg
+    font_lg = _font(24)
+    font_md = _font(17)
+    font_sm = _font(14)
 
     px, py = W + 16, 18
 
@@ -183,7 +199,7 @@ def _build_score_panel(
         # Show top-6 leaf classes by score (not all 10 — panel space)
         # We don't have full softmax here (pipeline returns only top class),
         # so we show the single prediction prominently + severity info.
-        draw.text((px, py), f"▶  {cls_name}", fill=color, font=font_sm)
+        draw.text((px, py), f"»  {cls_name}", fill=color, font=font_sm)
         py += 18
         fill_bar = int((panel_w - 32) * confidence)
         draw.rectangle([px, py, px + panel_w - 32, py + 7], fill=(50, 50, 58))
@@ -197,7 +213,7 @@ def _build_score_panel(
             dc     = det["class"]
             dconf  = det["confidence"]
             dc_col = _FRUIT_COLORS.get(dc, _DEFAULT_COLOR)
-            prefix = "▶  " if dc == cls_name else "   "
+            prefix = "»  " if dc == cls_name else "   "
             draw.text((px, py), f"{prefix}{dc}", fill=dc_col, font=font_sm)
             fill_mini = int((panel_w - 32) * dconf)
             mini_y = py + 17
@@ -248,19 +264,13 @@ def diagnose_image(
 
     rgb = image.convert("RGB")
 
-    # Save to temp file — pipeline needs a real path
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-    rgb.save(tmp_path, format="JPEG", quality=95)
-
-    try:
-        pipeline = _get_pipeline()
-        result   = pipeline.infer(tmp_path)
-    finally:
-        tmp_path.unlink(missing_ok=True)
+    # In-memory inference: re-encoding to a temp JPEG shifted scores vs the CLI.
+    pipeline = _get_pipeline()
+    upload_name = Path(f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    result   = pipeline.infer_image(rgb, upload_name)
 
     domain     = result["domain"]
-    cls_name   = result["class"]
+    cls_name   = _display_class(result)
     confidence = result["confidence"]
     severity   = result.get("severity_pct", 0.0)
 
@@ -345,14 +355,9 @@ _FRUIT_CLASSES = [
 
 
 def build_ui() -> gr.Blocks:
-    with gr.Blocks(
-        title="Tomato Disease Diagnosis",
-        theme=gr.themes.Base(primary_hue="green", neutral_hue="slate"),
-        css="""
-        .title { font-size: 1.55em; font-weight: 700; margin-bottom: 3px; }
-        .sub   { color: #999; font-size: 0.95em; margin-bottom: 16px; }
-        """,
-    ) as demo:
+    # Gradio 6 moved theme/css from Blocks() to launch(); older versions need them here.
+    style_kwargs = {} if _GRADIO_6 else {"theme": _THEME, "css": _CSS}
+    with gr.Blocks(title="Tomato Disease Diagnosis", **style_kwargs) as demo:
 
         gr.HTML("""
             <div class="title">Tomato Disease Diagnosis</div>
@@ -409,8 +414,8 @@ def build_ui() -> gr.Blocks:
             )
 
         outputs = [out_explain, out_panel, out_md, out_saved]
+        # Button only: also binding inp.change ran every upload twice (and logged twice).
         btn.click(fn=diagnose_image, inputs=[inp], outputs=outputs)
-        inp.change(fn=diagnose_image, inputs=[inp], outputs=outputs)
 
         gr.Markdown("""
 ---
@@ -423,11 +428,13 @@ All results auto-saved to `results/inference_results/`
 
 def main() -> None:
     demo = build_ui()
+    style_kwargs = {"theme": _THEME, "css": _CSS} if _GRADIO_6 else {}
     demo.launch(
         server_name="127.0.0.1",
         server_port=7860,
         share=False,
         inbrowser=True,
+        **style_kwargs,
     )
 
 
