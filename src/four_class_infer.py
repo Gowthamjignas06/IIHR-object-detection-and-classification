@@ -32,7 +32,6 @@ import sys
 from pathlib import Path
 
 import torch
-import yaml
 from PIL import Image
 from ultralytics import YOLO
 
@@ -40,8 +39,10 @@ _SRC = Path(__file__).resolve().parent
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from advice import build_advice, load_knowledge_base
 from evaluate import load_leaf_checkpoint, load_router_checkpoint, repo_root
-from train_fruit_yolo import resolve_data_yaml, write_resolved_data_yaml
+from infer_pipeline import DEFAULT_CHECKPOINTS, load_image
+from severity import FruitDetection, fruit_severity_pct, leaf_severity_pct
 from transforms import build_leaf_transforms
 
 # ── Canonical four-class output labels ────────────────────────────────────────
@@ -68,6 +69,16 @@ _FRUIT_VERSION = "fruit_v1_yolov8n"
 
 _DOMAIN_NAMES = ("leaf", "fruit")
 
+# Four-class label -> knowledge-base key (= the source model's class name).
+_ADVICE_KEY = {
+    "Early blight": "Early blight",
+    "Healthy leaf": "Healthy",
+    "Blossom_End_Rot": "Blossom_End_Rot",
+    "Healthy plant": "Healthy_Tomato",
+}
+_FRUIT_TARGETS = {"Blossom_End_Rot", "Healthy_Tomato"}
+_LEAF_TARGETS = {"Early blight", "Healthy"}
+
 
 def _resolve_device(name: str = "auto") -> torch.device:
     if name == "auto":
@@ -93,28 +104,32 @@ class FourClassDiagnosticClassifier:
         device: str = "auto",
         fruit_conf_threshold: float = 0.20,
         fruit_iou_threshold: float = 0.70,
+        router_checkpoint: Path | str | None = None,
+        leaf_checkpoint: Path | str | None = None,
+        fruit_checkpoint: Path | str | None = None,
+        with_advice: bool = True,
+        knowledge_base_path: Path | str | None = None,
     ) -> None:
         self.root = root or repo_root()
         self.device = _resolve_device(device)
         self.fruit_conf_threshold = fruit_conf_threshold
         self.fruit_iou_threshold = fruit_iou_threshold
 
-        router_ckpt = self.root / "checkpoints" / f"{_ROUTER_VERSION}.pt"
-        leaf_ckpt = self.root / "checkpoints" / f"{_LEAF_VERSION}.pt"
-        fruit_ckpt = self.root / "checkpoints" / f"{_FRUIT_VERSION}.pt"
-        if not fruit_ckpt.exists():
-            fruit_ckpt = self.root / "runs" / "fruit" / "train" / "weights" / "best.pt"
-
-        for ckpt, label in [
-            (router_ckpt, "router"),
-            (leaf_ckpt, "leaf"),
-            (fruit_ckpt, "fruit"),
-        ]:
+        overrides = {"router": router_checkpoint, "leaf": leaf_checkpoint, "fruit": fruit_checkpoint}
+        ckpts: dict[str, Path] = {}
+        for label, override in overrides.items():
+            ckpt = Path(override) if override is not None else DEFAULT_CHECKPOINTS[label]
+            if not ckpt.is_absolute():
+                ckpt = self.root / ckpt
+            # No silent fallback to runs/.../best.pt: fail clearly instead.
             if not ckpt.exists():
                 raise FileNotFoundError(
                     f"{label} checkpoint not found at {ckpt}. "
-                    "Train the model first (see README) or download from the release."
+                    "Train the model first (see README) or pass the path explicitly."
                 )
+            ckpts[label] = ckpt.resolve()
+        router_ckpt, leaf_ckpt, fruit_ckpt = ckpts["router"], ckpts["leaf"], ckpts["fruit"]
+        self.model_versions = {label: path.stem for label, path in ckpts.items()}
 
         self._router, _ = load_router_checkpoint(router_ckpt, self.device)
         self._router.eval()
@@ -124,18 +139,11 @@ class FourClassDiagnosticClassifier:
         self._leaf_class_names: list[str] = _leaf_data["class_names"]
 
         self._fruit_model = YOLO(str(fruit_ckpt))
-        _data_yaml = write_resolved_data_yaml(
-            resolve_data_yaml(
-                yaml.safe_load(
-                    (self.root / "configs" / "fruit_yolo.yaml").read_text()
-                )
-            )
-        )
-        self._fruit_class_names: list[str] = list(
-            yaml.safe_load(_data_yaml.read_text())["names"]
-        )
+        fruit_names = self._fruit_model.names
+        self._fruit_class_names: list[str] = [fruit_names[i] for i in sorted(fruit_names)]
 
         self._transform = build_leaf_transforms(train=False, image_size=224)
+        self.knowledge_base = load_knowledge_base(knowledge_base_path) if with_advice else None
 
     @property
     def class_names(self) -> list[str]:
@@ -156,6 +164,9 @@ class FourClassDiagnosticClassifier:
     ) -> tuple[str, float, dict[str, float], list[dict] | None]:
         """
         Run the 10-class leaf EfficientNet and extract the two target scores.
+
+        raw_leaf_top3[0] is the 10-class top-1; ``classify`` flags it when it is
+        neither Early blight nor Healthy.
 
         The full softmax is computed; only "Early blight" and "Healthy" indices
         are surfaced in the four-class output. All other leaf probabilities are
@@ -191,19 +202,22 @@ class FourClassDiagnosticClassifier:
     # ── Fruit branch ──────────────────────────────────────────────────────────
 
     def _classify_fruit(
-        self, image_path: Path
-    ) -> tuple[str, float, dict[str, float], list[dict]]:
+        self, image: Image.Image
+    ) -> tuple[str, float, dict[str, float], list[dict], tuple[int, int]]:
         """
         Run YOLOv8n detection and surface Blossom_End_Rot and Healthy_Tomato
         confidence scores as the two fruit-side four-class scores.
 
-        If neither target class is detected, defaults to Healthy plant (no visible
-        pathology ≈ healthy).
+        If neither target class is detected, defaults to Healthy plant with score
+        1.0 (kept for backward compatibility); ``classify`` adds warnings when
+        that default hides "nothing detected" or a non-target condition.
         """
+        # Same in-memory (EXIF-corrected) image the router saw.
         results = self._fruit_model.predict(
-            str(image_path),
+            image,
             conf=self.fruit_conf_threshold,
             iou=self.fruit_iou_threshold,
+            device=str(self.device),
             verbose=False,
         )[0]
 
@@ -243,7 +257,8 @@ class FourClassDiagnosticClassifier:
             "Healthy leaf": 0.0,
             "Healthy plant": round(healthy_conf, 4),
         }
-        return predicted, confidence, scores, detections
+        image_size = (results.orig_shape[1], results.orig_shape[0])
+        return predicted, confidence, scores, detections, image_size
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -261,23 +276,57 @@ class FourClassDiagnosticClassifier:
           detections       : list of YOLO boxes (fruit branch only), else None
           raw_leaf_top3    : top-3 full leaf predictions (leaf branch only), else None
           model_versions   : dict of model version strings used
+        Additive keys (later versions): severity_pct, warnings, other_conditions, advice.
         """
         path = Path(image_path)
         if not path.is_absolute():
-            path = (self.root / path).resolve()
-        image = Image.open(path).convert("RGB")
+            cwd_path = Path.cwd() / path
+            path = cwd_path.resolve() if cwd_path.exists() else (self.root / path).resolve()
+        return self.classify_image(load_image(path))
+
+    def classify_image(self, image: Image.Image) -> dict:
+        """Classify an in-memory RGB image (same output as ``classify``)."""
+        image = image.convert("RGB")
         tensor = self._transform(image).unsqueeze(0).to(self.device)
 
         domain, route_conf = self._route(tensor)
 
+        warnings: list[str] = []
+        other_conditions: list[dict] = []
         if domain == "leaf":
             predicted, confidence, scores, raw_leaf_top3 = self._classify_leaf(tensor)
             detections = None
+            severity = leaf_severity_pct(image)
+            top1 = raw_leaf_top3[0]
+            if top1["class"] not in _LEAF_TARGETS:
+                # The 10-class model's best guess is outside the 4 classes.
+                warnings.append("other_leaf_condition_detected")
+                other_conditions.append({"class": top1["class"], "confidence": top1["score"]})
         else:
-            predicted, confidence, scores, detections = self._classify_fruit(path)
+            predicted, confidence, scores, detections, image_size = self._classify_fruit(image)
             raw_leaf_top3 = None
+            severity = fruit_severity_pct(
+                [
+                    FruitDetection(d["class"], d["confidence"], tuple(d["bbox"]))
+                    for d in detections
+                ],
+                image_size,
+            )
+            if not detections:
+                warnings.append("no_fruit_detected")
+            others: dict[str, float] = {}
+            for det in detections:
+                if det["class"] not in _FRUIT_TARGETS:
+                    others[det["class"]] = max(others.get(det["class"], 0.0), det["confidence"])
+            other_conditions = [
+                {"class": name, "confidence": conf}
+                for name, conf in sorted(others.items(), key=lambda kv: -kv[1])
+            ]
+            if other_conditions and scores["Blossom_End_Rot"] == 0.0 and predicted == "Healthy plant":
+                # "Healthy plant 1.0" here only means "no target class found".
+                warnings.append("other_condition_detected")
 
-        return {
+        result = {
             "predicted_class": predicted,
             "confidence": round(confidence, 4),
             "domain": domain,
@@ -285,12 +334,40 @@ class FourClassDiagnosticClassifier:
             "class_scores": scores,
             "detections": detections,
             "raw_leaf_top3": raw_leaf_top3,
-            "model_versions": {
-                "router": _ROUTER_VERSION,
-                "leaf": _LEAF_VERSION,
-                "fruit": _FRUIT_VERSION,
-            },
+            "model_versions": dict(self.model_versions),
+            # Additive keys — the original keys above keep their values.
+            "severity_pct": severity,
+            "warnings": warnings,
+            "other_conditions": other_conditions,
         }
+        if self.knowledge_base is not None:
+            result["advice"] = self._advice(result)
+        return result
+
+    def _advice(self, result: dict) -> dict:
+        """Guidance for what was actually seen (a non-target condition wins over the
+        default 'Healthy plant'/'Healthy leaf')."""
+        warnings = result["warnings"]
+        if "no_fruit_detected" in warnings:
+            kb_class, conf = "Healthy_Tomato", 0.0
+        elif result["other_conditions"] and (
+            "other_condition_detected" in warnings or "other_leaf_condition_detected" in warnings
+        ):
+            kb_class = result["other_conditions"][0]["class"]
+            conf = result["other_conditions"][0]["confidence"]
+        else:
+            kb_class, conf = _ADVICE_KEY[result["predicted_class"]], result["confidence"]
+        return build_advice(
+            {
+                "domain": result["domain"],
+                "class": kb_class,
+                "confidence": conf,
+                "severity_pct": result["severity_pct"],
+                "detections": result["detections"],
+                "warnings": warnings,
+            },
+            self.knowledge_base,
+        )
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -318,6 +395,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--fruit-conf", type=float, default=0.20,
         help="YOLO detection confidence threshold (default 0.20).",
     )
+    parser.add_argument("--router-checkpoint", type=Path, default=None)
+    parser.add_argument("--leaf-checkpoint", type=Path, default=None)
+    parser.add_argument("--fruit-checkpoint", type=Path, default=None)
+    parser.add_argument(
+        "--no-advice", action="store_true",
+        help="Omit the disease explanation / treatment / action-step 'advice' key.",
+    )
     return parser
 
 
@@ -335,6 +419,10 @@ def _pretty_print(result: dict, image_path: Path) -> None:
         print("\n  Full leaf model top-3:")
         for entry in result["raw_leaf_top3"]:
             print(f"    {entry['class']:<35}  {entry['score']:.4f}")
+    if result.get("warnings"):
+        print(f"\n  Warnings: {', '.join(result['warnings'])}")
+    for other in result.get("other_conditions") or []:
+        print(f"  Other condition seen: {other['class']} ({other['confidence']:.2f})")
     if result["detections"]:
         print(f"\n  YOLO detections ({len(result['detections'])} box(es)):")
         for det in result["detections"]:
@@ -349,6 +437,10 @@ def main() -> int:
     clf = FourClassDiagnosticClassifier(
         device=args.device,
         fruit_conf_threshold=args.fruit_conf,
+        router_checkpoint=args.router_checkpoint,
+        leaf_checkpoint=args.leaf_checkpoint,
+        fruit_checkpoint=args.fruit_checkpoint,
+        with_advice=not args.no_advice,
     )
     for img_path in args.images:
         result = clf.classify(img_path)
