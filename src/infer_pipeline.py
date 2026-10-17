@@ -194,10 +194,14 @@ class TomatoInferencePipeline:
 
     def infer(self, image_path: Path | str) -> dict:
         path = self._resolve_image_path(image_path)
-        image = load_image(path)
+        return self.infer_image(load_image(path), path)
+
+    def infer_image(self, image: Image.Image, image_path: Path | None = None) -> dict:
+        """Run the pipeline on an in-memory RGB image (``image_path`` names the Grad-CAM file)."""
+        image = image.convert("RGB")
         domain, route_conf = self._route(image)
         if domain == "leaf":
-            result = self._infer_leaf(image, path)
+            result = self._infer_leaf(image, image_path)
         else:
             result = self._infer_fruit(image)
 
