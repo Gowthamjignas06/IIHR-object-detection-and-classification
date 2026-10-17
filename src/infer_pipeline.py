@@ -197,8 +197,19 @@ class TomatoInferencePipeline:
         image = load_image(path)
         domain, route_conf = self._route(image)
         if domain == "leaf":
-            return self._infer_leaf(image, path)
-        return self._infer_fruit(image)
+            result = self._infer_leaf(image, path)
+        else:
+            result = self._infer_fruit(image)
+
+        # Additive keys only — the seven original keys keep their values.
+        warnings: list[str] = []
+        if domain == "fruit" and not result["detections"]:
+            # "class" stays "Healthy_Tomato" (conf 0.0) for backward compatibility,
+            # but nothing was actually detected.
+            warnings.append("no_fruit_detected")
+        result["router_confidence"] = round(route_conf, 4)
+        result["warnings"] = warnings
+        return result
 
 
 def build_parser() -> argparse.ArgumentParser:
