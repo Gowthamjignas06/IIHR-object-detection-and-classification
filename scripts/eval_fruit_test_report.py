@@ -1,12 +1,25 @@
-"""Held-out test evaluation report for the fruit YOLO detector."""
+"""Held-out test evaluation report for the fruit YOLO detector.
+
+Writes a JSON + Markdown report and compares it with the frozen v1 report.
+
+Usage:
+    python scripts/eval_fruit_test_report.py --checkpoint checkpoints/fruit_v2_yolov8n.pt
+    python scripts/eval_fruit_test_report.py            # re-evaluates v1 into a NEW file
+
+The default output is results/fruit_detector_test_report_<checkpoint stem>.json,
+so the committed v1 report (results/fruit_detector_test_report.json) is never
+overwritten. Existing output files are refused unless --overwrite is passed.
+"""
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import date
 from pathlib import Path
 
+import torch
 import yaml
 from ultralytics import YOLO
 
@@ -16,21 +29,17 @@ sys.path.insert(0, str(_SRC))
 from train_fruit_yolo import (  # noqa: E402
     repo_root,
     resolve_data_yaml,
+    resolve_device,
     write_resolved_data_yaml,
 )
 
-CLASS_NAMES = [
-    "Anthracnose",
-    "Blossom_End_Rot",
-    "Catfaced",
-    "Fruit_Cracking",
-    "Healthy_Tomato",
-    "Late_Blight",
-    "Mold",
-    "Spotted_Wilt_Virus",
-]
+V1_REPORT = Path("results") / "fruit_detector_test_report.json"
+V1_CHECKPOINT = Path("checkpoints") / "fruit_v1_yolov8n.pt"
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
-KNOWN_LIMITATIONS = {
+# Error analysis of the v1 checkpoint (scripts/analyze_fruit_confusion.py,
+# scripts/analyze_swv_box_areas.py). Kept for reference; not recomputed here.
+V1_KNOWN_LIMITATIONS = {
     "Catfaced": {
         "issue": "Recall-perfect but precision-poor (over-detection)",
         "val_precision": 0.568,
@@ -52,24 +61,33 @@ KNOWN_LIMITATIONS = {
 }
 
 
-def _run_split(model: YOLO, data_yaml: Path, split: str, config: dict) -> dict:
+def _count_images(data_yaml: Path, split: str) -> int:
+    payload = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
+    split_dir = Path(payload["path"]) / payload[split]
+    return sum(1 for p in split_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+
+
+def _run_split(
+    model: YOLO, data_yaml: Path, split: str, config: dict, device: str | int
+) -> dict:
     metrics = model.val(
         data=str(data_yaml),
         split=split,
         imgsz=int(config["training"]["imgsz"]),
         batch=int(config["training"]["batch"]),
-        device=0,
+        device=device,
         workers=0,
         plots=False,
         verbose=False,
     )
     box = metrics.box
+    names = model.names
     per_class = []
-    for i, name in enumerate(CLASS_NAMES):
-        p, r, ap50, ap = metrics.box.class_result(i)
+    for i in sorted(names):
+        p, r, ap50, ap = box.class_result(i)
         per_class.append(
             {
-                "class": name,
+                "class": names[i],
                 "precision": round(float(p), 4),
                 "recall": round(float(r), 4),
                 "map50": round(float(ap50), 4),
@@ -78,7 +96,7 @@ def _run_split(model: YOLO, data_yaml: Path, split: str, config: dict) -> dict:
         )
     return {
         "split": split,
-        "n_images": int(getattr(metrics, "nt", 0) or (210 if split == "test" else 199)),
+        "n_images": _count_images(data_yaml, split),
         "map50": round(float(box.map50), 4),
         "map50_95": round(float(box.map), 4),
         "precision_mean": round(float(box.mp), 4),
@@ -107,26 +125,75 @@ def _val_test_flags(val_m: dict, test_m: dict, threshold: float = 0.05) -> list[
     return flagged
 
 
+def _compare_to_v1(test_m: dict, v1_report_path: Path) -> dict | None:
+    if not v1_report_path.exists():
+        return None
+    v1_test = json.loads(v1_report_path.read_text(encoding="utf-8"))["test"]
+    v1_rows = {row["class"]: row for row in v1_test["per_class"]}
+    overall = {
+        key: {
+            "v1": v1_test[key],
+            "new": test_m[key],
+            "delta": round(test_m[key] - v1_test[key], 4),
+        }
+        for key in ("map50", "map50_95", "precision_mean", "recall_mean")
+    }
+    per_class = []
+    for row in test_m["per_class"]:
+        v1_row = v1_rows.get(row["class"])
+        if v1_row is None:
+            continue
+        per_class.append(
+            {
+                "class": row["class"],
+                **{
+                    f"delta_{key}": round(row[key] - v1_row[key], 4)
+                    for key in ("precision", "recall", "map50", "map50_95")
+                },
+            }
+        )
+    return {"v1_report": v1_report_path.as_posix(), "test_overall": overall, "test_per_class": per_class}
+
+
+def _checkpoint_info(weights: Path, root: Path, best_epoch: int | None) -> dict:
+    ckpt = torch.load(weights, map_location="cpu", weights_only=False)
+    train_args = ckpt.get("train_args") or {}
+    try:
+        rel = weights.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        rel = weights.as_posix()
+    return {
+        "path": rel,
+        "model_version": weights.stem,
+        "trained_at": ckpt.get("date"),
+        "ultralytics_version": ckpt.get("version"),
+        "best_epoch": best_epoch,
+        "epochs_cap": train_args.get("epochs"),
+        "patience": train_args.get("patience"),
+        "train_val_metrics": ckpt.get("train_metrics"),
+    }
+
+
 def _write_markdown(report: dict, path: Path) -> None:
     val_m = report["val"]
     test_m = report["test"]
+    ckpt = report["checkpoint"]
     lines = [
-        "# Fruit YOLO Detector — Held-Out Test Evaluation Report",
+        f"# Fruit YOLO Detector — Held-Out Test Evaluation Report ({ckpt['model_version']})",
         "",
-        f"**Step 6 — approved complete**  ",
         f"**Date:** {report['generated_at']}  ",
-        f"**Checkpoint:** `{report['checkpoint']['path']}`",
+        f"**Checkpoint:** `{ckpt['path']}`  ",
+        f"**Device:** {report['device']}",
         "",
         "## Checkpoint summary",
         "",
-        f"| Field | Value |",
-        f"|---|---|",
-        f"| Model | YOLOv8n |",
-        f"| Best epoch | {report['checkpoint']['best_epoch']} |",
-        f"| Stop reason | Early stopping (patience=20) at epoch 64 |",
-        f"| Canonical artifact | `{report['checkpoint']['path']}` |",
+        "| Field | Value |",
+        "|---|---|",
+        f"| Trained at | {ckpt['trained_at']} |",
+        f"| Best epoch | {ckpt['best_epoch'] if ckpt['best_epoch'] is not None else 'not recorded'} |",
+        f"| Epoch cap / patience | {ckpt['epochs_cap']} / {ckpt['patience']} |",
         "",
-        "## Test-set overall metrics (held-out, n=210 images)",
+        f"## Test-set overall metrics (held-out, n={test_m['n_images']} images)",
         "",
         "| Metric | Val | Test |",
         "|---|---:|---:|",
@@ -154,26 +221,25 @@ def _write_markdown(report: dict, path: Path) -> None:
         lines.append(
             f"| {v_row['class']} | {v_row['map50']:.4f} | {t_row['map50']:.4f} | {d:+.4f} | {flag} |"
         )
-    lines.extend(["", "## Known limitations (this iteration)", ""])
-    cat = KNOWN_LIMITATIONS["Catfaced"]
-    swv = KNOWN_LIMITATIONS["Spotted_Wilt_Virus"]
+    comparison = report.get("comparison_to_v1")
+    if comparison:
+        lines.extend(["", f"## Comparison with v1 (`{comparison['v1_report']}`)", ""])
+        lines.append("| Metric | v1 | This run | Δ |")
+        lines.append("|---|---:|---:|---:|")
+        for key, row in comparison["test_overall"].items():
+            lines.append(f"| {key} | {row['v1']:.4f} | {row['new']:.4f} | {row['delta']:+.4f} |")
+        lines.extend(["", "| Class | ΔP | ΔR | ΔmAP@0.5 | ΔmAP@0.5:0.95 |", "|---|---:|---:|---:|---:|"])
+        for row in comparison["test_per_class"]:
+            lines.append(
+                f"| {row['class']} | {row['delta_precision']:+.4f} | {row['delta_recall']:+.4f} | "
+                f"{row['delta_map50']:+.4f} | {row['delta_map50_95']:+.4f} |"
+            )
     lines.extend(
         [
-            "### Catfaced",
-            f"- {cat['issue']}",
-            f"- Val precision {cat['val_precision']}, recall {cat['val_recall']}",
-            f"- Dominant FP: **{cat['dominant_fp_source']}**",
-            "",
-            "### Spotted_Wilt_Virus",
-            f"- {swv['issue']}",
-            f"- Val recall {swv['val_recall']}, precision {swv['val_precision']}",
-            f"- {swv['missed_as_background_pct_of_gt']}% of GT missed as background; "
-            f"{swv['absorbed_as_late_blight_pct_of_gt']}% absorbed as Late_Blight (79–89% IoU)",
-            f"- **Conclusion:** {swv['conclusion']}",
             "",
             "## Related artifacts",
             "",
-            "- Training log: `logs/fruit_train.log`",
+            "- v1 known limitations: see `known_limitations_v1_reference` in the JSON report",
             "- Confusion analysis: `scripts/analyze_fruit_confusion.py`",
             f"- Machine-readable report: `{path.with_suffix('.json').name}`",
         ]
@@ -181,32 +247,59 @@ def _write_markdown(report: dict, path: Path) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Fruit detector held-out test report.")
+    parser.add_argument("--checkpoint", type=Path, default=None, help=f"Default: {V1_CHECKPOINT}")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output JSON path (Markdown written alongside). "
+        "Default: results/fruit_detector_test_report_<checkpoint stem>.json",
+    )
+    parser.add_argument("--device", default="auto", help="auto | cpu | cuda | 0")
+    parser.add_argument("--best-epoch", type=int, default=None, help="Recorded in the report.")
+    parser.add_argument("--overwrite", action="store_true", help="Allow replacing an existing report.")
+    return parser
+
+
 def main() -> int:
+    args = build_parser().parse_args()
     root = repo_root()
+    weights = args.checkpoint or V1_CHECKPOINT
+    if not weights.is_absolute():
+        weights = root / weights
+    if not weights.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {weights}")
+
+    out_json = args.out or Path("results") / f"fruit_detector_test_report_{weights.stem}.json"
+    if not out_json.is_absolute():
+        out_json = root / out_json
+    out_json = out_json.with_suffix(".json")
+    out_md = out_json.with_suffix(".md")
+    v1_report = (root / V1_REPORT).resolve()
+    if out_json.resolve() == v1_report:
+        raise ValueError(f"Refusing to write over the frozen v1 report {V1_REPORT}.")
+    for path in (out_json, out_md):
+        if path.exists() and not args.overwrite:
+            raise FileExistsError(f"{path} exists. Choose another --out or pass --overwrite.")
+
     config = yaml.safe_load((root / "configs" / "fruit_yolo.yaml").read_text(encoding="utf-8"))
     data_yaml = write_resolved_data_yaml(resolve_data_yaml(config))
-    weights = root / "checkpoints" / "fruit_v1_yolov8n.pt"
-    if not weights.exists():
-        weights = root / "runs" / "fruit" / "train" / "weights" / "best.pt"
+    device = resolve_device(args.device)
 
     model = YOLO(str(weights))
-    val_m = _run_split(model, data_yaml, "val", config)
-    test_m = _run_split(model, data_yaml, "test", config)
+    val_m = _run_split(model, data_yaml, "val", config, device)
+    test_m = _run_split(model, data_yaml, "test", config, device)
     flagged = _val_test_flags(val_m, test_m, threshold=0.05)
 
     report = {
-        "report_version": "1.0",
+        "report_version": "1.1",
         "generated_at": str(date.today()),
-        "step": 6,
-        "status": "approved_complete",
-        "checkpoint": {
-            "path": "checkpoints/fruit_v1_yolov8n.pt",
-            "canonical": True,
-            "best_epoch": 44,
-            "stop_epoch": 64,
-            "stop_reason": "early_stopping_patience_20",
-        },
-        "known_limitations": KNOWN_LIMITATIONS,
+        "status": "generated_unreviewed",
+        "device": str(device),
+        "checkpoint": _checkpoint_info(weights, root, args.best_epoch),
+        "known_limitations_v1_reference": V1_KNOWN_LIMITATIONS,
         "val": val_m,
         "test": test_m,
         "val_vs_test_map_flags": flagged,
@@ -217,10 +310,9 @@ def main() -> int:
             "val_map50_95": val_m["map50_95"],
             "any_class_map50_drop_gt_0_05": len(flagged) > 0,
         },
+        "comparison_to_v1": _compare_to_v1(test_m, v1_report),
     }
 
-    out_json = root / "results" / "fruit_detector_test_report.json"
-    out_md = root / "results" / "fruit_detector_test_report.md"
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     _write_markdown(report, out_md)
@@ -241,6 +333,12 @@ def main() -> int:
             print(f"  - {row['class']}: delta={row['delta_map50']:+.4f}")
     else:
         print("No class dropped >0.05 mAP@0.5 from val to test.")
+    comparison = report["comparison_to_v1"]
+    if comparison:
+        print()
+        print("=== vs v1 (test) ===")
+        for key, row in comparison["test_overall"].items():
+            print(f"{key:<16} v1={row['v1']:.4f} new={row['new']:.4f} delta={row['delta']:+.4f}")
     print()
     print(f"Saved: {out_json}")
     print(f"Saved: {out_md}")
