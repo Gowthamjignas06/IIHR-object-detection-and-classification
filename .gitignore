@@ -49,3 +49,11 @@ data/fruit_raw/*
 # Jupyter
 .ipynb_checkpoints/
 notebooks/.ipynb_checkouts/
+
+# Gradio app outputs (the committed v1 examples in results/inference_results/ stay tracked)
+results/inference_results/gradcam/
+results/inference_results/*.jpg
+results/inference_results/app_log.json
+
+# External validation images (Google Drive) — validation only, never training
+data/external_validation/

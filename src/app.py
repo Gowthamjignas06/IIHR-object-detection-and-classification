@@ -35,7 +35,8 @@ from infer_pipeline import TomatoInferencePipeline
 # ── Output directories ────────────────────────────────────────────────────────
 _RESULTS_DIR = _ROOT / "results" / "inference_results"
 _RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-_LOG_FILE = _RESULTS_DIR / "inference_log.json"
+# New runs log here (gitignored); the committed inference_log.json is a frozen v1 artifact.
+_LOG_FILE = _RESULTS_DIR / "app_log.json"
 
 # ── Colour palette — leaf classes ─────────────────────────────────────────────
 _LEAF_COLORS: dict[str, tuple[int, int, int]] = {
@@ -335,7 +336,7 @@ def diagnose_image(
         f"Saved:\n"
         f"  Result panel  → {panel_path.name}\n"
         f"  {extra_label.title()} → {explain_path.name}\n"
-        f"  Log → inference_log.json"
+        f"  Log → {_LOG_FILE.name}"
     )
 
     return explain_img, panel_img, md, saved_msg
@@ -420,7 +421,7 @@ def build_ui() -> gr.Blocks:
         gr.Markdown("""
 ---
 All results auto-saved to `results/inference_results/`  
-— result panel JPEG + Grad-CAM/detection JPEG + running `inference_log.json`.
+— result panel JPEG + Grad-CAM/detection JPEG + running `app_log.json` (all gitignored).
 """)
 
     return demo
