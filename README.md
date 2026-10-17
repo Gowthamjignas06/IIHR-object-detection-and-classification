@@ -27,15 +27,9 @@ Architecture and design rationale: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ## Quick start
 
-### 1. Launch the web interface (recommended)
+### 1. Clone and install (Python 3.10+)
 
-```powershell
-python src/app.py
-```
-
-Opens `http://127.0.0.1:7860` in your browser. Upload any tomato image — leaf or fruit — and click **Diagnose**. Results are automatically saved to `results/inference_results/`.
-
-### 2. Clone and install
+Windows (PowerShell):
 
 ```powershell
 git clone https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
@@ -45,13 +39,33 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+macOS / Linux:
+
+```bash
+git clone https://github.com/Gowthamjignas06/IIHR-object-detection-and-classification.git
+cd IIHR-object-detection-and-classification
+python3 -m venv .venv          # macOS without 3.10+: brew install python@3.12, then python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+`requirements-lock.txt` pins the exact versions verified on macOS arm64 (CPU, Python 3.12).
+
 Install PyTorch with CUDA if you have an NVIDIA GPU ([pytorch.org](https://pytorch.org)):
 
 ```powershell
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 ```
 
-### 2. Model weights
+### 2. Launch the web interface (recommended)
+
+```bash
+python src/app.py
+```
+
+Opens `http://127.0.0.1:7860` in your browser. Upload any tomato image — leaf or fruit — and click **Diagnose**. Result images and a running `app_log.json` are saved to `results/inference_results/` (gitignored).
+
+### 3. Model weights
 
 The three trained checkpoints are **included in this repo** under [`checkpoints/`](checkpoints/):
 
@@ -63,13 +77,13 @@ The three trained checkpoints are **included in this repo** under [`checkpoints/
 
 No download step is required for inference after cloning.
 
-### 3. Leaf training data (optional for inference only)
+### 4. Leaf training data (optional for inference only)
 
 Inference works on any photo with the included checkpoints. **Retraining the leaf branch** requires PlantVillage tomato images — see [`data/README.md`](data/README.md).
 
 Fruit split images and labels are included under `data/splits/fruit/`.
 
-### 4. Example: run on held-out test images
+### 5. Example: run on held-out test images
 
 These are real images from the **held-out test splits** (not used during training). Ground-truth labels are shown for comparison.
 
@@ -156,7 +170,7 @@ python -u src/infer_pipeline.py --json `
 
 The router sends each image to the correct branch automatically (leaf → classifier + Grad-CAM; fruit → YOLO boxes).
 
-### 5. Run inference on your own photo
+### 6. Run inference on your own photo
 
 From the repo root:
 
@@ -177,13 +191,16 @@ python -u src/infer_pipeline.py --json photo1.jpg photo2.jpg
 | `IMAGE ...` | One or more image paths (required) |
 | `--json` | Print JSON only (no path headers) |
 | `--device` | `auto` (default), `cuda`, or `cpu` |
+| `--router-checkpoint`, `--leaf-checkpoint`, `--fruit-checkpoint` | Use other weights (e.g. a v2 checkpoint); `model_version` in the JSON is the checkpoint file name |
+
+Relative image paths are resolved against your current directory first, then the repo root.
 
 Leaf runs save a Grad-CAM overlay to `results/gradcam_overlays/<stem>_gradcam.jpg`.
 
 ### Phone photos — practical notes
 
 - Convert **HEIC → JPEG** before running (Pillow does not open `.heic` by default).
-- **EXIF orientation is not applied** — rotate/export so the image looks correct on disk.
+- EXIF orientation is applied automatically, so phone photos are processed upright.
 - Crop so the **leaf or fruit fills most of the frame** for best routing and severity estimates.
 
 ## Training
@@ -203,7 +220,11 @@ python src/train.py --config configs/leaf.yaml
 python src/train_fruit_yolo.py --config configs/fruit_yolo.yaml
 ```
 
-Evaluation scripts: `scripts/eval_leaf_test_report.py`, `scripts/eval_fruit_test_report.py`, `scripts/verify_leaf_checkpoint.py`
+Training refuses to overwrite an existing checkpoint (the v1 files are frozen): copy the config, set `checkpoint.filename` to a v2 name, or pass `--overwrite`.
+
+Evaluation scripts: `scripts/eval_leaf_test_report.py --checkpoint …`, `scripts/eval_fruit_test_report.py --checkpoint … [--out …]` (writes a new report and compares it with v1; never overwrites the v1 report), `scripts/verify_leaf_checkpoint.py`
+
+Tests: `python -m pytest tests/`
 
 ## Project layout
 

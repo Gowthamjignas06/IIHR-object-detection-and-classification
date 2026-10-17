@@ -6,7 +6,7 @@ A software-only system for diagnosing tomato plant disease, covering two visual 
 
 - **Leaf disease classification** — source: PlantVillage dataset (Kaggle, `emmarex/plantdisease`), filtered to tomato-only classes. 10 classes: Bacterial spot, Early blight, Late blight, Leaf Mold, Septoria leaf spot, Spider mites (Two-spotted), Target Spot, Tomato Yellow Leaf Curl Virus, Tomato mosaic virus, Healthy. Plain image classification.
 - **Fruit disease detection** — source: `profnourasemary/tomato-dataset` (Kaggle), exported via Roboflow as "Tomato Fruit Diseases Detection v3," dated 2025-04-24. This is a **YOLOv8-format object detection dataset** (bounding box annotations per image, not folder-per-class images), 1319 images total.
-  - **Augmentation already baked in**: Roboflow generated 3 versions of each source image. True unique source images ≈ 440, not 1319. This has a direct consequence for splitting — see section 2.8.
+  - **Augmentation already baked in**: Roboflow generated 3 versions of most source images. Audited count: 549 unique source groups (385 triplets + 164 singletons), not 1319 — see `data/AUDIT.md`. This has a direct consequence for splitting — see section 2.8.
   - Local setup: see `data/README.md` (`data/fruit_raw/`)
 
 Leaf data setup: see `data/README.md` (`data/leaf_raw/PlantVillage/`)
@@ -54,6 +54,10 @@ Phase 3 (deferred): sensors → fuzzy logic → actuators. Not implemented.
   "model_version": "string"
 }
 ```
+
+These seven keys are the stable contract. Later versions only **add** keys
+(currently `router_confidence`, `warnings`); existing keys are never
+renamed, removed or given new meanings.
 
 ## 5. Repository structure
 
