@@ -57,3 +57,6 @@ results/inference_results/app_log.json
 
 # External validation images (Google Drive) — validation only, never training
 data/external_validation/
+
+# pytest
+.pytest_cache/
