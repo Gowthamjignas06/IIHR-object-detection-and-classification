@@ -95,12 +95,21 @@ def train_fruit_yolo(
     *,
     smoke_test: bool = False,
     epochs: int | None = None,
+    overwrite: bool = False,
 ) -> Path:
     training = config["training"]
     output = config["output"]
     weights_name = training["pretrained_weights"]
     run_name = "smoke_test" if smoke_test else output.get("run_name", "train")
     epoch_count = 1 if smoke_test else int(epochs or training["epochs"])
+
+    dest = CHECKPOINTS_DIR / config["checkpoint"]["filename"]
+    if not smoke_test and dest.exists() and not overwrite:
+        # Checked before training so a long run can't end by clobbering v1.
+        raise FileExistsError(
+            f"{dest} already exists. Set checkpoint.filename in the config to a new "
+            "name (e.g. fruit_v2_yolov8n.pt) or pass --overwrite."
+        )
 
     device = resolve_device(training.get("device", "auto"))
     print(f"Training device: {device}")
@@ -142,7 +151,6 @@ def train_fruit_yolo(
 
     if not smoke_test and chosen.exists():
         CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
-        dest = CHECKPOINTS_DIR / config["checkpoint"]["filename"]
         shutil.copy2(chosen, dest)
         print(f"Checkpoint copied to: {dest}")
 
@@ -169,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Override config epoch count (ignored with --smoke-test).",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Allow overwriting an existing checkpoint file (off by default).",
+    )
     return parser
 
 
@@ -179,6 +192,7 @@ def main() -> int:
         config,
         smoke_test=args.smoke_test,
         epochs=args.epochs,
+        overwrite=args.overwrite,
     )
     return 0
 
